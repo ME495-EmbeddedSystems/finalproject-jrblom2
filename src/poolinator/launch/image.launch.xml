@@ -1,0 +1,9 @@
+<launch>
+    <arg name="rviz_config" default='$(find-pkg-share poolinator)/config/default.rviz' description="Rviz configuration file."/>
+    
+    <include file='$(find-pkg-share poolinator)/launch/rs_launch.py' >
+    </include>
+
+    <node pkg="rviz2" exec="rviz2" args="-d $(var rviz_config)"/>
+</launch>
+
