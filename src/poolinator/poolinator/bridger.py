@@ -70,8 +70,6 @@ class BridgeNode(Node):
                 # draw a red dot at the center of each tag
                 cv.circle(cv_image, (center_x, center_y), radius=10, color=(0, 0, 255), thickness=-1)
 
-                # self.get_logger().info(f'Detection: ID={tag_id}, Center=({center_x}, {center_y})')
-
                 # finding scale from pixels to meters
                 scale = 0
                 tag_pairs = [
@@ -86,7 +84,7 @@ class BridgeNode(Node):
                     point1 = centers[tag0]
                     point2 = centers[tag2]
                     distance = euclidean_distance(point1, point2)
-                    scale = 0.3 / distance
+                    scale = dist0to2meters / distance
 
                 if tag0 in centers and tag4 in centers:
                     distx = abs(centers[tag4][0] - centers[tag0][0]) * scale
@@ -96,7 +94,6 @@ class BridgeNode(Node):
 
         new_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
         self.pub.publish(new_msg)
-
 
 def main():
     rclpy.init()
