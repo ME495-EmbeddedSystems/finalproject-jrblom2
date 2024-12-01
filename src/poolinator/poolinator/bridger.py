@@ -72,44 +72,27 @@ class BridgeNode(Node):
 
                 # self.get_logger().info(f'Detection: ID={tag_id}, Center=({center_x}, {center_y})')
 
-                # distances in pixels
-                # tag_pairs = [
-                #     (0, 2, 'dist0to2'),
-                #     (1, 3, 'dist1to3'),
-                #     (0, 1, 'dist0to1'),
-                #     (2, 3, 'dist2to3'),
-                # ]
-                # for tag1, tag2, label in tag_pairs:
-                #     if tag1 in centers and tag2 in centers:
-                #         point1 = centers[tag1]
-                #         point2 = centers[tag2]
-                #         distance = euclidean_distance(point1, point2)
-                #         self.get_logger().info(f'{label}: {distance:.2f} pixels')
-
                 # finding scale from pixels to meters
                 scale = 0
                 tag_pairs = [
-                    (0, 2, 'dist0to2'),
+                    (0, 2), # to find scale
+                    (0, 4)  # to find coords
                 ]
-                for tag1, tag2, label in tag_pairs:
-                    if tag1 in centers and tag2 in centers:
-                        point1 = centers[tag1]
-                        point2 = centers[tag2]
-                        distance = euclidean_distance(point1, point2)
-                        scale = 0.3 / distance
+                tag0 = tag_pairs[0][0]
+                tag2 = tag_pairs[0][1]
+                tag4 = tag_pairs[1][1]
 
-                # distances in pixels
-                tag_pairs = [
-                    (0, 4, 'dist0to4'),
-                ]
-                for tag1, tag2, label in tag_pairs:
-                    if tag1 in centers and tag2 in centers:
-                        scale = 0.515 / euclidean_distance(centers[0], centers[1]) 
-                        distx = abs(centers[tag1][0] - centers[tag2][0]) * scale
-                        disty = abs(centers[tag1][1] - centers[tag2][1]) * scale
-                        self.get_logger().info(f'distx: {distx:.2f} meters')
-                        self.get_logger().info(f'disty: {disty:.2f} meters')
+                if tag0 in centers and tag2 in centers:
+                    point1 = centers[tag0]
+                    point2 = centers[tag2]
+                    distance = euclidean_distance(point1, point2)
+                    scale = 0.3 / distance
 
+                if tag0 in centers and tag4 in centers:
+                    distx = abs(centers[tag4][0] - centers[tag0][0]) * scale
+                    disty = abs(centers[tag4][1] - centers[tag0][1]) * scale
+                    self.get_logger().info(f'distx: {distx:.2f} meters')
+                    self.get_logger().info(f'disty: {disty:.2f} meters')
 
         new_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
         self.pub.publish(new_msg)
