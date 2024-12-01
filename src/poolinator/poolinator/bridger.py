@@ -24,6 +24,7 @@ class BridgeNode(Node):
         self.bridge = CvBridge()
         self.create_subscription(Image, 'image', self.opencv_process, 10)
         self.pub = self.create_publisher(Image, 'new_image', 10)
+        
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
