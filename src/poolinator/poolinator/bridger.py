@@ -73,18 +73,43 @@ class BridgeNode(Node):
                 # self.get_logger().info(f'Detection: ID={tag_id}, Center=({center_x}, {center_y})')
 
                 # distances in pixels
+                # tag_pairs = [
+                #     (0, 2, 'dist0to2'),
+                #     (1, 3, 'dist1to3'),
+                #     (0, 1, 'dist0to1'),
+                #     (2, 3, 'dist2to3'),
+                # ]
+                # for tag1, tag2, label in tag_pairs:
+                #     if tag1 in centers and tag2 in centers:
+                #         point1 = centers[tag1]
+                #         point2 = centers[tag2]
+                #         distance = euclidean_distance(point1, point2)
+                #         self.get_logger().info(f'{label}: {distance:.2f} pixels')
+
+                # finding scale from pixels to meters
+                scale = 0
                 tag_pairs = [
                     (0, 2, 'dist0to2'),
-                    (1, 3, 'dist1to3'),
-                    (0, 1, 'dist0to1'),
-                    (2, 3, 'dist2to3'),
                 ]
                 for tag1, tag2, label in tag_pairs:
                     if tag1 in centers and tag2 in centers:
                         point1 = centers[tag1]
                         point2 = centers[tag2]
                         distance = euclidean_distance(point1, point2)
-                        self.get_logger().info(f'{label}: {distance:.2f} pixels')
+                        scale = 0.3 / distance
+
+                # distances in pixels
+                tag_pairs = [
+                    (0, 4, 'dist0to4'),
+                ]
+                for tag1, tag2, label in tag_pairs:
+                    if tag1 in centers and tag2 in centers:
+                        scale = 0.515 / euclidean_distance(centers[0], centers[1]) 
+                        distx = abs(centers[tag1][0] - centers[tag2][0]) * scale
+                        disty = abs(centers[tag1][1] - centers[tag2][1]) * scale
+                        self.get_logger().info(f'distx: {distx:.2f} meters')
+                        self.get_logger().info(f'disty: {disty:.2f} meters')
+
 
         new_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
         self.pub.publish(new_msg)
