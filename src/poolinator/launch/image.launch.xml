@@ -12,8 +12,8 @@
     <node pkg='rviz2' exec='rviz2' args="-d $(var rviz_config)"/>
 
     <node pkg='poolinator' exec='bridger' name='bridger'>
-        <!-- /camera/camera/color/image_raw contains color images in a compatible encoding (bgr8). -->
-        <remap from='image' to='/camera/camera/color/image_raw' />
+        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
+        <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
 
 </launch>
