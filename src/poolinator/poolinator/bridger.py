@@ -31,20 +31,30 @@ class BridgeNode(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
-        self.get_logger().info('IN TIMERRRR')  # Log message
+        # self.get_logger().info('IN TIMERRRR')
+        pass
+
 
     def opencv_process(self, image):
         """Draw a circle on the subscribed image and republish it to new_image."""
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
 
-        # gray_image = cv.imread(cv_image, cv.IMREAD_GRAYSCALE)
         gray_image = cv.cvtColor(cv_image, cv.COLOR_BGR2GRAY)
 
         detector = apriltag("tagStandard41h12")
 
         detections = detector.detect(gray_image)
         if detections:
-            self.get_logger().info('DETECTED!!!')  # Log message
+            self.get_logger().info('DETECTED!!!')
+            for detection in detections:
+                # self.get_logger().info(f'detection: {detection}') 
+                # self.get_logger().info(f'detection keys: {detection.keys()}')
+
+                center = detection['center']  # nparray: [x, y]
+                center_x, center_y = int(center[0]), int(center[1])
+
+                # Draw a red dot at the center on the image
+                cv.circle(cv_image, (center_x, center_y), radius=10, color=(0, 0, 255), thickness=-1) 
 
         new_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
         self.pub.publish(new_msg)
