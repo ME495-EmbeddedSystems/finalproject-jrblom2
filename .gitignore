@@ -4,3 +4,5 @@ log/
 __pycache__/
 .vscode/
 src/realsense2_camera*
+src/apriltag_ros/
+src/me495_cvbridge/
