@@ -1,0 +1,20 @@
+<launch>
+    <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/default.rviz' description="Rviz configuration file."/>
+    
+    <include file='$(find-pkg-share poolinator)/launch/rs_launch.py' >
+    </include>
+
+    <!-- <node pkg='usb_cam' exec='usb_cam_node_exe' name='usb_cam'>
+        <param name='framerate' value='30.0' />
+        <param name='pixel_format' value='yuyv' />
+    </node> -->
+    
+    <node pkg='rviz2' exec='rviz2' args="-d $(var rviz_config)"/>
+
+    <node pkg='poolinator' exec='bridger' name='bridger'>
+        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
+        <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
+    </node>
+
+</launch>
+
