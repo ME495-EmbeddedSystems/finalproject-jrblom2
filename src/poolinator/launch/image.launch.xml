@@ -11,5 +11,10 @@
         <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
 
-</launch>
+    <node pkg='apriltag_ros' exec='apriltag_node'>
+        <param from='$(find-pkg-share poolinator)/config/tags.yaml' />
+        <remap from='image_rect' to='/camera/camera/color/image_raw'/>
+        <remap from='camera_info' to='/camera/camera_info'/>
+    </node>
 
+</launch>
