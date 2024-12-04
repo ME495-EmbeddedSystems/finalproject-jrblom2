@@ -15,6 +15,8 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
+from geometry_msgs.msg import Pose
+
 
 def euclidean_distance(point1, point2):
     return np.linalg.norm(np.array(point1) - np.array(point2))
@@ -69,6 +71,8 @@ class BridgeNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
+        self.camera_to_cuetag_pose = Pose()
+
     def broadcast_ferhand_to_cuetag(self):
         try:
             t = TransformStamped()
@@ -88,12 +92,37 @@ class BridgeNode(Node):
             t.transform.rotation.w = q[3]
 
             self.tf_broadcaster.sendTransform(t)
-            self.get_logger().info(f"Published transform from {t.header.frame_id} to {t.child_frame_id}")
+            # self.get_logger().info(f"Published transform from {t.header.frame_id} to {t.child_frame_id}")
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
+    def lookup_camera_to_cuetag(self):
+        # Store frame names in variables that will be used to
+        # compute transformations
+        from_frame_rel = 'camera_link'
+        to_frame_rel = 'tagStandard41h12:4'
+
+        try:
+            t = self.tf_buffer.lookup_transform(
+                to_frame_rel,
+                from_frame_rel,
+                rclpy.time.Time())
+        except TransformException as ex:
+            self.get_logger().info(
+                f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+            return
+
+        self.camera_to_cuetag_pose.position.x = t.transform.translation.y
+        self.camera_to_cuetag_pose.position.y = t.transform.translation.x
+        self.camera_to_cuetag_pose.position.z = t.transform.translation.x
+
+        self.camera_to_cuetag_pose.orientation = t.transform.rotation
+
+        self.get_logger().info(f"Transform from {from_frame_rel} to {to_frame_rel}: {t.transform}")
+
     def timer_callback(self):
         self.broadcast_ferhand_to_cuetag()
+        self.lookup_camera_to_cuetag()
 
     
 def main():
