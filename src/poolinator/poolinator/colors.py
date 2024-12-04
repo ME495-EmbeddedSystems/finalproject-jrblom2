@@ -91,10 +91,33 @@ class RealSenseCamera:
 
         return images
     
+    def find_center_of_mass(self, mask):
+        # Find contours in the mask
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if contours:
+            # Get the largest contour by area
+            largest_contour = max(contours, key=cv2.contourArea)
+            
+            # Calculate the moments of the largest contour
+            M = cv2.moments(largest_contour)
+
+            # Ensure the moment is not zero (to avoid division by zero)
+            if M["m00"] != 0:
+                # Calculate the center of mass (cx, cy)
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                return cx, cy
+        return None, None # if no red ball is found 
     
-    def color_tracking(self, color_image):
-        if color_image is None:
-            return None, None
+    def get_distance_to_ball(self, cx, cy, depth_image):
+        depth_value = depth_image[cy, cx]
+        distance = depth_value * self.depth_scale
+        return distance
+    
+    def color_tracking(self, color_image, depth_image):
+        if color_image is None or depth_image is None:
+            return None, None, None
 
         #convert BGR TO HSV
         hsv = cv2.cvtColor (color_image, cv2.COLOR_BGR2HSV )
@@ -128,10 +151,16 @@ class RealSenseCamera:
         # Apply the mask to the original image to extract the red ball
         red_ball = cv2.bitwise_and(color_image, color_image, mask=red_ball_mask)
 
+        # Find the center of mass (centroid) of the red ball
+        cx, cy = self.find_center_of_mass(red_ball_mask)
+
         # Check if any red pixels detected
-        if np.sum(red_ball_mask) == 0:
+        if cx is None or cy is None:
             print("No red ball detected!")
-            return None, None
+            return None, None, None
+        
+
+
 
         return red_ball_mask, red_ball
 
@@ -141,7 +170,7 @@ class RealSenseCamera:
 
 
 
-    def display_frames(self, images, mask= None, res= None):
+    def display_frames(self, images, mask= None, res= None, distance= None):
 
         # Render the main aligned images
         cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
@@ -155,6 +184,10 @@ class RealSenseCamera:
         if res is not None:
             cv2.namedWindow('Red Ball Detection', cv2.WINDOW_NORMAL)
             cv2.imshow('Red Ball Detection', res)
+
+
+        if distance is not None:
+            print(f"Distance to red ball: {distance:.2f} meters")
 
         key = cv2.waitKey(1)
 
@@ -186,11 +219,15 @@ if __name__ == "__main__":
             images = camera.process_frames(depth_image, color_image)
 
             # Track the red ball
-            red_mask, red_ball = camera.color_tracking(color_image)
+            red_mask, red_ball = camera.color_tracking(color_image, depth_image)
 
             # Display the frames
             if camera.display_frames(images, mask=red_mask, res=red_ball):
                 break
+
+            # Track the red ball and calculate distance
+            red_mask, red_ball = camera.color_tracking(color_image, depth_image)
     finally:
         camera.stop()
+
 
