@@ -1,3 +1,5 @@
+import numpy as np
+import math
 import cv2 as cv
 
 from cv_bridge import CvBridge
@@ -6,10 +8,39 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from apriltag import apriltag
 
-import numpy as np
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+
 
 def euclidean_distance(point1, point2):
     return np.linalg.norm(np.array(point1) - np.array(point2))
+
+def quaternion_from_euler(ai, aj, ak):
+    ai /= 2.0
+    aj /= 2.0
+    ak /= 2.0
+    ci = math.cos(ai)
+    si = math.sin(ai)
+    cj = math.cos(aj)
+    sj = math.sin(aj)
+    ck = math.cos(ak)
+    sk = math.sin(ak)
+    cc = ci*ck
+    cs = ci*sk
+    sc = si*ck
+    ss = si*sk
+
+    q = np.empty((4, ))
+    q[0] = cj*sc - sj*cs
+    q[1] = cj*ss + sj*cc
+    q[2] = cj*cs - sj*sc
+    q[3] = cj*cc + sj*ss
+
+    return q
 
 class BridgeNode(Node):
     """
@@ -27,74 +58,44 @@ class BridgeNode(Node):
     def __init__(self):
         super().__init__('bridge')
         self.bridge = CvBridge()
-        self.create_subscription(Image, 'rgb_image', self.process_rgb_image, 10)
-        # self.create_subscription(Image, 'depth_image', self.process_depth_image, 10)
-        self.pub = self.create_publisher(Image, 'new_image', 10)
+        # self.create_subscription(Image, 'rgb_image', self.process_rgb_image, 10)
+        # self.pub = self.create_publisher(Image, 'new_image', 10)
         
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
+        self.tf_broadcaster = TransformBroadcaster(self)
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+    def broadcast_ferhand_to_cuetag(self):
+        try:
+            t = TransformStamped()
+
+            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.frame_id = 'fer_hand'
+            t.child_frame_id = 'tagStandard41h12_4'
+
+            t.transform.translation.x = 0.061
+            t.transform.translation.y = 0.018
+            t.transform.translation.z = 0.0
+
+            q = quaternion_from_euler(0, 0, 0)
+            t.transform.rotation.x = q[0]
+            t.transform.rotation.y = q[1]
+            t.transform.rotation.z = q[2]
+            t.transform.rotation.w = q[3]
+
+            self.tf_broadcaster.sendTransform(t)
+            self.get_logger().info(f"Published transform from {t.header.frame_id} to {t.child_frame_id}")
+        except Exception as e:
+            self.get_logger().error(f"Failed to publish transform: {e}")
+
     def timer_callback(self):
-        # self.get_logger().info('IN TIMERRRR')
-        pass
+        self.broadcast_ferhand_to_cuetag()
+
     
-    def process_depth_image(self, image):
-        # cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
-        pass
-
-    def process_rgb_image(self, image):
-        """Draw a circle on the subscribed image and republish it to new_image."""
-        # short side
-        dist0to2meters = 0.3
-        dist1to3meters = 0.3
-        # long side
-        dist0to1meters = 0.515
-        dist2to3meters = 0.515
-
-        cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
-
-        gray_image = cv.cvtColor(cv_image, cv.COLOR_BGR2GRAY)
-
-        detector = apriltag("tagStandard41h12")
-
-        centers = {}  # dict to store tag IDs and their centers
-
-        detections = detector.detect(gray_image)
-        if detections:
-            for detection in detections:
-                tag_id = detection['id']
-                center = detection['center']
-                center_x, center_y = int(center[0]), int(center[1])
-                centers[tag_id] = (center_x, center_y)
-
-                # draw a red dot at the center of each tag
-                cv.circle(cv_image, (center_x, center_y), radius=10, color=(0, 0, 255), thickness=-1)
-
-                # finding scale from pixels to meters
-                scale = 0
-                tag_pairs = [
-                    (0, 2), # to find scale
-                    (0, 4)  # to find coords
-                ]
-                tag0 = tag_pairs[0][0]
-                tag2 = tag_pairs[0][1]
-                tag4 = tag_pairs[1][1]
-
-                if tag0 in centers and tag2 in centers:
-                    point1 = centers[tag0]
-                    point2 = centers[tag2]
-                    distance = euclidean_distance(point1, point2)
-                    scale = dist0to2meters / distance
-
-                if tag0 in centers and tag4 in centers:
-                    distx = abs(centers[tag4][0] - centers[tag0][0]) * scale
-                    disty = abs(centers[tag4][1] - centers[tag0][1]) * scale
-                    self.get_logger().info(f'distx: {distx:.2f} meters')
-                    self.get_logger().info(f'disty: {disty:.2f} meters')
-
-        new_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
-        self.pub.publish(new_msg)
-
 def main():
     rclpy.init()
     n = BridgeNode()

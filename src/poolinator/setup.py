@@ -15,7 +15,8 @@ setup(
             'launch/rs_launch.py'
             ]),  
         ('share/' + package_name + '/config', [
-            'config/default.rviz'
+            'config/default.rviz',
+            'config/tags.yaml'
             ]),         
     ],
     install_requires=['setuptools'],
