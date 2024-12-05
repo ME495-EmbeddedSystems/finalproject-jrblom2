@@ -39,7 +39,7 @@ class World:
     def __init__(self, node, cornerTagNames, ballTagNames):
         self.node = node
 
-        self.tf_broadcaster = TransformBroadcaster(self)
+        self.tf_broadcaster = TransformBroadcaster(self.node)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)

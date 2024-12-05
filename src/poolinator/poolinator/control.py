@@ -3,9 +3,9 @@ from enum import auto, Enum
 import rclpy
 from rclpy.node import Node
 
-from poolinator.poolinator.world import World
+from poolinator.world import World
 
-from motion_planning_interface.motion_planning_interface.MotionPlanningInterface import (
+from motion_planning_interface.MotionPlanningInterface import (
     MotionPlanningInterface,
 )
 
