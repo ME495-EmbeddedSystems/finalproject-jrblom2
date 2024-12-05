@@ -25,9 +25,8 @@ class ControlNode(Node):
 
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.move_top_left = self.create_service(Empty, 'move_top_left', self.move_top_left_callback)
-
-<<<<<<< HEAD
+        self.move_c1 = self.create_service(Empty, 'move_c1', self.move_c1_callback)
+        self.mp_interface = MotionPlanningInterface(self)
         self.table = PoolTable(
             self,
             [
@@ -39,11 +38,6 @@ class ControlNode(Node):
             ['b1'],
         )
 
-=======
-        # TODO need actual frame names
-        self.table = PoolTable(self, ['c1, c2, c3, c4'], ['b1'])
-        self.mp_interface = MotionPlanningInterface(self)
->>>>>>> a1792d5 (Added motion planning interface to control node)
         self.state = State.SETUP
 
     def timer_callback(self):
@@ -57,6 +51,8 @@ class ControlNode(Node):
         if self.state == State.RUNNING:
             self.get_logger().info(f"{self.table.pocketPositions()}")
 
+    def move_c1_callback(self, request, response):
+        pass
 
 def main():
     rclpy.init()
