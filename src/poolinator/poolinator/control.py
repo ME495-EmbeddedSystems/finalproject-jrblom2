@@ -32,7 +32,7 @@ class ControlNode(Node):
             return
 
         if self.state == State.RUNNING:
-            pass
+            self.get_logger().info(f"{self.table.pocketPositions()}")
 
 
 def main():
