@@ -28,6 +28,9 @@ class ControlNode(Node):
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.move_c1 = self.create_service(Empty, 'move_c1', self.move_c1_callback)
+        self.move_c2 = self.create_service(Empty, 'move_c2', self.move_c2_callback)
+        self.move_c3 = self.create_service(Empty, 'move_c3', self.move_c3_callback)
+        self.move_c4 = self.create_service(Empty, 'move_c4', self.move_c4_callback)
         self.mp_interface = MotionPlanningInterface(self)
         self.table = PoolTable(
             self,
@@ -64,8 +67,51 @@ class ControlNode(Node):
         eePose.position = eePosition
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
-        self.logger.info('Move Done demo')
+        self.logger.info('Move Done')
         return response
+    
+    async def move_c2_callback(self, request, response):
+        pocket_pos = self.table.pocketPositions()
+        c2 = pocket_pos[2]
+        eePose = Pose()
+        eePosition = Point()
+        eePosition.x = c2.x
+        eePosition.y = c2.y
+        eePosition.z = c2.z + .075
+        eePose.position = eePosition
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        self.logger.info('Move Done')
+        return response
+    
+    async def move_c3_callback(self, request, response):
+        pocket_pos = self.table.pocketPositions()
+        c3 = pocket_pos[3]
+        eePose = Pose()
+        eePosition = Point()
+        eePosition.x = c3.x
+        eePosition.y = c3.y
+        eePosition.z = c3.z + .075
+        eePose.position = eePosition
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        self.logger.info('Move Done')
+        return response
+    
+    async def move_c4_callback(self, request, response):
+        pocket_pos = self.table.pocketPositions()
+        c4 = pocket_pos[5]
+        eePose = Pose()
+        eePosition = Point()
+        eePosition.x = c4.x
+        eePosition.y = c4.y
+        eePosition.z = c4.z + .075
+        eePose.position = eePosition
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        self.logger.info('Move Done')
+        return response
+
 
 def main():
     rclpy.init()
