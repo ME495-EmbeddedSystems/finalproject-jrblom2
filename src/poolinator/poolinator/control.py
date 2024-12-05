@@ -3,7 +3,7 @@ from enum import auto, Enum
 import rclpy
 from rclpy.node import Node
 
-from table import PoolTable
+from poolinator.poolinator.world import World
 
 from motion_planning_interface.motion_planning_interface.MotionPlanningInterface import (
     MotionPlanningInterface,
@@ -31,12 +31,20 @@ class ControlNode(Node):
 
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.move_c1 = self.create_service(Empty, 'move_c1', self.move_c1_callback)
-        self.move_c2 = self.create_service(Empty, 'move_c2', self.move_c2_callback)
-        self.move_c3 = self.create_service(Empty, 'move_c3', self.move_c3_callback)
-        self.move_c4 = self.create_service(Empty, 'move_c4', self.move_c4_callback)
+        self.move_c1 = self.create_service(
+            Empty, 'move_c1', self.move_c1_callback
+        )
+        self.move_c2 = self.create_service(
+            Empty, 'move_c2', self.move_c2_callback
+        )
+        self.move_c3 = self.create_service(
+            Empty, 'move_c3', self.move_c3_callback
+        )
+        self.move_c4 = self.create_service(
+            Empty, 'move_c4', self.move_c4_callback
+        )
         self.mp_interface = MotionPlanningInterface(self)
-        self.table = PoolTable(
+        self.world = World(
             self,
             [
                 'tagStandard41h12:0',
@@ -51,14 +59,16 @@ class ControlNode(Node):
 
     def timer_callback(self):
         # Stay in setup state until pool table frames exist from CV
-        if self.state == State.SETUP:
-            if self.table.tableExists():
-                # Add planning scene objects here before running
-                self.state = State.RUNNING
-            return
+        # if self.state == State.SETUP:
+        #     if self.world.tableExists():
+        #         # Add planning scene objects here before running
+        #         self.setup_scene()
+        #         self.state = State.RUNNING
+        #     return
 
-        if self.state == State.RUNNING:
-            self.get_logger().info(f"{self.table.pocketPositions()}")
+        # if self.state == State.RUNNING:
+        #     self.get_logger().info(f"{self.world.pocketPositions()}")
+        pass
 
     async def move_c1_callback(self, request, response):
         pocket_pos = self.table.pocketPositions()
@@ -67,17 +77,17 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c1.x
         eePosition.y = c1.y
-        eePosition.z = c1.z + .2
+        eePosition.z = c1.z + 0.2
         eePose.position = eePosition
         eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi/2)
-        eeOrientation.x = np.sin(np.pi/2)
+        eeOrientation.w = np.cos(np.pi / 2)
+        eeOrientation.x = np.sin(np.pi / 2)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
         return response
-    
+
     async def move_c2_callback(self, request, response):
         pocket_pos = self.table.pocketPositions()
         c2 = pocket_pos[2]
@@ -85,17 +95,17 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c2.x
         eePosition.y = c2.y
-        eePosition.z = c2.z + .2
+        eePosition.z = c2.z + 0.2
         eePose.position = eePosition
         eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi/2)
-        eeOrientation.x = np.sin(np.pi/2)
+        eeOrientation.w = np.cos(np.pi / 2)
+        eeOrientation.x = np.sin(np.pi / 2)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
         return response
-    
+
     async def move_c3_callback(self, request, response):
         pocket_pos = self.table.pocketPositions()
         c3 = pocket_pos[3]
@@ -103,17 +113,17 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c3.x
         eePosition.y = c3.y
-        eePosition.z = c3.z + .2
+        eePosition.z = c3.z + 0.2
         eePose.position = eePosition
         eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi/2)
-        eeOrientation.x = np.sin(np.pi/2)
+        eeOrientation.w = np.cos(np.pi / 2)
+        eeOrientation.x = np.sin(np.pi / 2)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
         return response
-    
+
     async def move_c4_callback(self, request, response):
         pocket_pos = self.table.pocketPositions()
         c4 = pocket_pos[5]
@@ -121,16 +131,43 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c4.x
         eePosition.y = c4.y
-        eePosition.z = c4.z + .2
+        eePosition.z = c4.z + 0.2
         eePose.position = eePosition
         eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi/2)
-        eeOrientation.x = np.sin(np.pi/2)
+        eeOrientation.w = np.cos(np.pi / 2)
+        eeOrientation.x = np.sin(np.pi / 2)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
         return response
+
+    def setup_scene(self):
+        tableWidth = 2.0
+        tableLength = 2.4
+        tableHeight = 0.1
+
+        poseTable = Pose()
+        poseTable.position.x = 0.0
+        poseTable.position.y = 0.0
+        poseTable.position.z = -tableHeight / 2 - 0.01
+
+        cameraWidth = 2.0
+        cameraLength = 0.2
+        cameraHeight = 0.1
+
+        cameraPoint = self.world.cameraPosition()
+        poseCamera = Pose()
+        poseCamera.position.x = cameraPoint.x
+        poseCamera.position.y = cameraPoint.y
+        poseCamera.position.z = cameraPoint.z
+
+        self.mp_interface.ps.add_box(
+            'table', (tableWidth, tableLength, tableHeight), poseTable
+        )
+        self.mp_interface.ps.add_box(
+            'camera', (cameraWidth, cameraLength, cameraHeight), poseCamera
+        )
 
 
 def main():
