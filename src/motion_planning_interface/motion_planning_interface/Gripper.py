@@ -1,8 +1,7 @@
 """
 Wrapper for simple motion planning with MoveIt.
 
-Contains functions for planning a path based on goal joints, a goal pose,
-a cartesian path goal pose, or planning to a saved configuration.
+Contains functions for opening and closing the gripper
 """
 
 from moveit_msgs.action import MoveGroup

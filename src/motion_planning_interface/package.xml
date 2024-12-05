@@ -3,7 +3,7 @@
 <package format="3">
   <name>motion_planning_interface</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Wraps MoveIt functionality for easy use with the Franka</description>
   <maintainer email="jblom5400@gmail.com"></maintainer>
   <license>Apache-2.0</license>
 

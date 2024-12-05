@@ -11,6 +11,8 @@ from motion_planning_interface.motion_planning_interface.MotionPlanningInterface
 
 from std_srvs.srv import Empty
 
+from geometry_msgs.msg import Point, Pose
+
 
 class State(Enum):
     """Keep track of the robots current command."""
@@ -51,8 +53,19 @@ class ControlNode(Node):
         if self.state == State.RUNNING:
             self.get_logger().info(f"{self.table.pocketPositions()}")
 
-    def move_c1_callback(self, request, response):
-        pass
+    async def move_c1_callback(self, request, response):
+        pocket_pos = self.table.pocketPositions()
+        c1 = pocket_pos[0]
+        eePose = Pose()
+        eePosition = Point()
+        eePosition.x = c1.x
+        eePosition.y = c1.y
+        eePosition.z = c1.z + .075
+        eePose.position = eePosition
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        self.logger.info('Move Done demo')
+        return response
 
 def main():
     rclpy.init()

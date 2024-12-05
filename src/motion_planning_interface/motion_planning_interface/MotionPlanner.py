@@ -169,8 +169,8 @@ class MotionPlanner:
         goalMessage.goal_constraints = [goalConstraints]
         goalMessage.max_velocity_scaling_factor = 0.1
         goalMessage.max_acceleration_scaling_factor = 0.1
-        goalMessage.allowed_planning_time = 5.0
-        goalMessage.num_planning_attempts = 10
+        goalMessage.allowed_planning_time = 10.0
+        goalMessage.num_planning_attempts = 50
         goalRequest = MoveGroup.Goal(request=goalMessage)
 
         response_goal_handle = await self._client.send_goal_async(goalRequest)
@@ -247,8 +247,8 @@ class MotionPlanner:
         goalMessage.reference_trajectories = [genericTrajectory]
         goalMessage.max_velocity_scaling_factor = 0.1
         goalMessage.max_acceleration_scaling_factor = 0.1
-        goalMessage.allowed_planning_time = 5.0
-        goalMessage.num_planning_attempts = 10
+        goalMessage.allowed_planning_time = 10.0
+        goalMessage.num_planning_attempts = 50
         goalRequest = MoveGroup.Goal(request=goalMessage)
 
         response_goal_handle = await self._client.send_goal_async(goalRequest)
