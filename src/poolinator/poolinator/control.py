@@ -20,8 +20,17 @@ class ControlNode(Node):
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        # TODO need actual frame names
-        self.table = PoolTable(self, ['c1, c2, c3, c4'], ['b1'])
+        self.table = PoolTable(
+            self,
+            [
+                'tagStandard41h12:0',
+                'tagStandard41h12:1',
+                'tagStandard41h12:2',
+                'tagStandard41h12:3',
+            ],
+            ['b1'],
+        )
+
         self.state = State.SETUP
 
     def timer_callback(self):

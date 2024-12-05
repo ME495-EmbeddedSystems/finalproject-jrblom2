@@ -1,7 +1,4 @@
 from tf2_ros import TransformBroadcaster
-from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-from geometry_msgs.msg import TransformStamped
-from tf2_geometry_msgs import do_transform_pose
 from geometry_msgs.msg import Vector3
 
 import rclpy
@@ -62,3 +59,12 @@ class PoolTable:
         pocketPos.append(midpoint(pocketPos[0], pocketPos[1]))
         pocketPos.append(midpoint(pocketPos[2], pocketPos[3]))
         return pocketPos
+
+    def ballPositions(self):
+        ballPos = []
+        for ball in self.ballNames:
+            tf = self.tf_buffer.lookup_transform(
+                'base', ball, rclpy.time.Time()
+            )
+            ballPos.append(tf.transform.translation)
+        return ballPos
