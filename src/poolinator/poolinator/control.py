@@ -11,7 +11,9 @@ from motion_planning_interface.motion_planning_interface.MotionPlanningInterface
 
 from std_srvs.srv import Empty
 
-from geometry_msgs.msg import Point, Pose
+from geometry_msgs.msg import Point, Pose, Quaternion
+
+import numpy as np
 
 
 class State(Enum):
@@ -65,6 +67,10 @@ class ControlNode(Node):
         eePosition.y = c1.y
         eePosition.z = c1.z + .2
         eePose.position = eePosition
+        eeOrientation = Quaternion()
+        eeOrientation.w = np.cos(np.pi/2)
+        eeOrientation.x = np.sin(np.pi/2)
+        eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
@@ -79,6 +85,10 @@ class ControlNode(Node):
         eePosition.y = c2.y
         eePosition.z = c2.z + .2
         eePose.position = eePosition
+        eeOrientation = Quaternion()
+        eeOrientation.w = np.cos(np.pi/2)
+        eeOrientation.x = np.sin(np.pi/2)
+        eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
@@ -93,6 +103,10 @@ class ControlNode(Node):
         eePosition.y = c3.y
         eePosition.z = c3.z + .2
         eePose.position = eePosition
+        eeOrientation = Quaternion()
+        eeOrientation.w = np.cos(np.pi/2)
+        eeOrientation.x = np.sin(np.pi/2)
+        eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
@@ -107,6 +121,10 @@ class ControlNode(Node):
         eePosition.y = c4.y
         eePosition.z = c4.z + .2
         eePose.position = eePosition
+        eeOrientation = Quaternion()
+        eeOrientation.w = np.cos(np.pi/2)
+        eeOrientation.x = np.sin(np.pi/2)
+        eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         self.logger.info('Move Done')
