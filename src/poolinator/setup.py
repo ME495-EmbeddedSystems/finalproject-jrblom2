@@ -14,7 +14,11 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (
             'share/' + package_name + '/launch',
-            ['launch/image.launch.xml', 'launch/rs_launch.py'],
+            [
+                'launch/image.launch.xml',
+                'launch/control.launch.xml',
+                'launch/rs_launch.py',
+            ],
         ),
         (
             'share/' + package_name + '/config',
