@@ -139,9 +139,6 @@ class BridgeNode(Node):
 
             self.cuetag_to_camera_pose.orientation = tcam.transform.rotation
 
-            self.get_logger().info(f"{tcam.transform}")
-            self.get_logger().info(f"{tque.transform}")
-
             # Combine transforms
             cameraInBase = do_transform_pose(self.cuetag_to_camera_pose, tque)
 
@@ -159,6 +156,7 @@ class BridgeNode(Node):
 
             # Publish camera in base frame
             self.static_broadcaster.sendTransform(t)
+            self.hasCameraPosition = True
             return
         except TransformException as ex:
             self.get_logger().info(
