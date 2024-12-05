@@ -63,7 +63,7 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c1.x
         eePosition.y = c1.y
-        eePosition.z = c1.z + .075
+        eePosition.z = c1.z + .2
         eePose.position = eePosition
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
@@ -77,7 +77,7 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c2.x
         eePosition.y = c2.y
-        eePosition.z = c2.z + .075
+        eePosition.z = c2.z + .2
         eePose.position = eePosition
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
@@ -91,7 +91,7 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c3.x
         eePosition.y = c3.y
-        eePosition.z = c3.z + .075
+        eePosition.z = c3.z + .2
         eePose.position = eePosition
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
@@ -105,7 +105,7 @@ class ControlNode(Node):
         eePosition = Point()
         eePosition.x = c4.x
         eePosition.y = c4.y
-        eePosition.z = c4.z + .075
+        eePosition.z = c4.z + .2
         eePose.position = eePosition
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
