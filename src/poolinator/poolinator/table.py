@@ -25,6 +25,15 @@ C1-----C2
 C4-----C3
 """
 
+"""
+    F
+    |
+    |
+P1--P2--P3
+|      |
+P6--P5--P4
+"""
+
 
 class PoolTable:
     def __init__(self, node, cornerTagNames, ballTagNames):
@@ -56,8 +65,8 @@ class PoolTable:
                 'base', corner, rclpy.time.Time()
             )
             pocketPos.append(tf.transform.translation)
-        pocketPos.append(midpoint(pocketPos[0], pocketPos[1]))
-        pocketPos.append(midpoint(pocketPos[2], pocketPos[3]))
+        pocketPos.insert(1, midpoint(pocketPos[0], pocketPos[1]))
+        pocketPos.insert(4, midpoint(pocketPos[2], pocketPos[3]))
         return pocketPos
 
     def ballPositions(self):
