@@ -9,6 +9,8 @@ from motion_planning_interface.motion_planning_interface.MotionPlanningInterface
     MotionPlanningInterface,
 )
 
+from std_srvs.srv import Empty
+
 
 class State(Enum):
     """Keep track of the robots current command."""
@@ -23,6 +25,7 @@ class ControlNode(Node):
 
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.move_top_left = self.create_service(Empty, 'move_top_left', self.move_top_left_callback)
 
 <<<<<<< HEAD
         self.table = PoolTable(
