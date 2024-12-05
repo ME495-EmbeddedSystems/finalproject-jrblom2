@@ -37,6 +37,7 @@ class ControlNode(Node):
         # Stay in setup state until pool table frames exist from CV
         if self.state == State.SETUP:
             if self.table.tableExists():
+                # Add planning scene objects here before running
                 self.state = State.RUNNING
             return
 
