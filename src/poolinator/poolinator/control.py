@@ -5,6 +5,10 @@ from rclpy.node import Node
 
 from table import PoolTable
 
+from motion_planning_interface.motion_planning_interface.MotionPlanningInterface import (
+    MotionPlanningInterface,
+)
+
 
 class State(Enum):
     """Keep track of the robots current command."""
@@ -20,6 +24,7 @@ class ControlNode(Node):
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
+<<<<<<< HEAD
         self.table = PoolTable(
             self,
             [
@@ -31,6 +36,11 @@ class ControlNode(Node):
             ['b1'],
         )
 
+=======
+        # TODO need actual frame names
+        self.table = PoolTable(self, ['c1, c2, c3, c4'], ['b1'])
+        self.mp_interface = MotionPlanningInterface(self)
+>>>>>>> a1792d5 (Added motion planning interface to control node)
         self.state = State.SETUP
 
     def timer_callback(self):
