@@ -35,11 +35,11 @@ P6--P5--P4
 """
 
 
-class PoolTable:
+class World:
     def __init__(self, node, cornerTagNames, ballTagNames):
         self.node = node
 
-        self.tf_broadcaster = TransformBroadcaster(self)
+        self.tf_broadcaster = TransformBroadcaster(self.node)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
@@ -60,20 +60,38 @@ class PoolTable:
 
     def pocketPositions(self):
         pocketPos = []
-        for corner in self.cornerNames:
-            tf = self.tf_buffer.lookup_transform(
-                'base', corner, rclpy.time.Time()
-            )
-            pocketPos.append(tf.transform.translation)
-        pocketPos.insert(1, midpoint(pocketPos[0], pocketPos[1]))
-        pocketPos.insert(4, midpoint(pocketPos[2], pocketPos[3]))
+        try:
+            for corner in self.cornerNames:
+                tf = self.tf_buffer.lookup_transform(
+                    'base', corner, rclpy.time.Time()
+                )
+                pocketPos.append(tf.transform.translation)
+            pocketPos.insert(1, midpoint(pocketPos[0], pocketPos[1]))
+            pocketPos.insert(4, midpoint(pocketPos[2], pocketPos[3]))
+        except TransformException:
+            self.node.get_logger().error("Failed to get transform for pockets")
+
         return pocketPos
 
     def ballPositions(self):
         ballPos = []
-        for ball in self.ballNames:
-            tf = self.tf_buffer.lookup_transform(
-                'base', ball, rclpy.time.Time()
-            )
-            ballPos.append(tf.transform.translation)
+        try:
+            for ball in self.ballNames:
+                tf = self.tf_buffer.lookup_transform(
+                    'base', ball, rclpy.time.Time()
+                )
+                ballPos.append(tf.transform.translation)
+        except TransformException:
+            self.node.get_logger().error("Failed to get transform for balls")
+
         return ballPos
+
+    def cameraPosition(self):
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                'base', 'camera_link', rclpy.time.Time()
+            )
+            return tf.transform.translation
+        except TransformException:
+            self.node.get_logger().error("Failed to get transform for balls")
+            return None
