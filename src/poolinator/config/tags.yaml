@@ -15,3 +15,11 @@ apriltag:                 # node name
       refine: True           # snap to strong gradients
       sharpening: 0.25    # sharpening of decoded images
       debug: False            # write additional debugging images to current working directory
+    
+    # (optional) list of tags
+    # If defined, 'frames' and 'sizes' must have the same length as 'ids'.
+    tag:
+      ids:    [0, 4]         # tag IDs for which to publish transform
+      frames: [table_tag, camera_que_tag]   # frame names
+      sizes:  [0.120, 0.023]     # tag-specific edge size, overrides the default 'size'
+

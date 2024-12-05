@@ -152,8 +152,8 @@ class ControlNode(Node):
         poseTable.position.y = 0.0
         poseTable.position.z = -tableHeight / 2 - 0.01
 
-        cameraWidth = 2.0
-        cameraLength = 0.2
+        cameraWidth = 0.2
+        cameraLength = 2.0
         cameraHeight = 0.1
 
         cameraPoint = self.world.cameraPosition()
