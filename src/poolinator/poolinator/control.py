@@ -15,6 +15,8 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 
 import numpy as np
 
+from tf_transformations import quaternion_from_euler
+
 
 class State(Enum):
     """Keep track of the robots current command."""
