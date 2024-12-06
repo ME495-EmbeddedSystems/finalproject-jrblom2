@@ -14,6 +14,17 @@ import pyrealsense2 as rs2
 if (not hasattr(rs2, 'intrinsics')):
     import pyrealsense2.pyrealsense2 as rs2
 
+
+"""
+-y
+|
+|
+|-x__ __ __ __ __+x
+|
+|
++y
+"""
+
 class ImageProcessorColors(Node):
     def __init__(self, depth_image_topic, depth_info_topic):
         super().__init__('image_processor_colors')
