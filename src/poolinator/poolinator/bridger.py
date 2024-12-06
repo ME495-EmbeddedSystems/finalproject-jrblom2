@@ -10,7 +10,7 @@ from apriltag import apriltag
 
 from tf2_ros import TransformBroadcaster
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Quaternion
 from tf2_geometry_msgs import do_transform_pose
 
 from tf2_ros import TransformException
@@ -39,11 +39,11 @@ def quaternion_from_euler(ai, aj, ak):
     sc = si * ck
     ss = si * sk
 
-    q = np.empty((4,))
-    q[0] = cj * sc - sj * cs
-    q[1] = cj * ss + sj * cc
-    q[2] = cj * cs - sj * sc
-    q[3] = cj * cc + sj * ss
+    q = Quaternion()
+    q.x = cj * sc - sj * cs
+    q.y = cj * ss + sj * cc
+    q.z = cj * cs - sj * sc
+    q.w = cj * cc + sj * ss
 
     return q
 
@@ -94,10 +94,7 @@ class BridgeNode(Node):
                 t.transform.translation.z = -0.018
 
                 q = quaternion_from_euler(np.pi, 0, 0)
-                t.transform.rotation.x = q[0]
-                t.transform.rotation.y = q[1]
-                t.transform.rotation.z = q[2]
-                t.transform.rotation.w = q[3]
+                t.transform.rotation = q
 
                 self.static_broadcaster.sendTransform(t)
                 self.get_logger().info(

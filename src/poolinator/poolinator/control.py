@@ -16,8 +16,6 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 
 import numpy as np
 
-from tf_transformations import quaternion_from_euler
-
 
 class State(Enum):
     """Keep track of the robots current command."""
@@ -29,6 +27,7 @@ class State(Enum):
 class ControlNode(Node):
     def __init__(self):
         super().__init__('control')
+        self.logger = self.get_logger()
 
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -139,9 +138,9 @@ class ControlNode(Node):
         poseTable.position.y = 0.0
         poseTable.position.z = -tableHeight / 2 - 0.01
 
-        cameraWidth = 0.2
-        cameraLength = 2.0
-        cameraHeight = 0.1
+        cameraWidth = 0.1
+        cameraLength = 1.0
+        cameraHeight = 0.05
 
         cameraPoint = self.world.cameraPosition()
         poseCamera = Pose()
