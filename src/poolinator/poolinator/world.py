@@ -6,6 +6,7 @@ import rclpy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from tf2_geometry_msgs import do_transform_pose
 
 
 def midpoint(point1, point2):
@@ -132,6 +133,38 @@ class World:
             self.node.get_logger().error("Failed to get transform for balls")
 
         return ballPos
+
+    def center(self):
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                'base', self.cornerName, rclpy.time.Time()
+            )
+            tagTranslation = tf.transform.translation
+            center = Vector3()
+            center.x = (
+                tagTranslation.x + self.tableTagSize / 2 + self.tableWidth / 2
+            )
+            center.y = (
+                tagTranslation.y + self.tableTagSize / 2 + self.tableLength / 2
+            )
+            center.z = tagTranslation.z + self.tableHeight
+            return center
+
+        except TransformException:
+            self.node.get_logger().error("Failed to get transform for center")
+
+    def strikeTransform(self, eeMotion):
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                'base', 'fer_hand_tcp', rclpy.time.Time()
+            )
+            eeMotionInBase = do_transform_pose(eeMotion, tf)
+            return eeMotionInBase
+
+        except TransformException:
+            self.node.get_logger().error(
+                "Failed to get transform for eeMotion"
+            )
 
     def cameraPosition(self):
         try:

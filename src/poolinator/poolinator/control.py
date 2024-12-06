@@ -43,6 +43,10 @@ class ControlNode(Node):
         self.move_c4 = self.create_service(
             Empty, 'move_c4', self.move_c4_callback
         )
+        self.center_strike = self.create_service(
+            Empty, 'center_strike', self.center_strike_callback
+        )
+
         self.mp_interface = MotionPlanningInterface(self)
         self.world = World(
             self,
@@ -62,7 +66,7 @@ class ControlNode(Node):
             return
 
         if self.state == State.RUNNING:
-            self.get_logger().info(f"{self.world.pocketPositions()}")
+            pass
 
     async def move_c1_callback(self, request, response):
         pocket_pos = self.world.pocketPositions()
@@ -127,6 +131,49 @@ class ControlNode(Node):
         await resultFuture
         self.logger.info('Move Done')
         return response
+
+    async def center_strike_callback(self, request, response):
+        center_pos = self.world.center()
+        eePose = Pose()
+        eePosition = Point()
+        eePosition.x = center_pos.x - 0.15
+        eePosition.y = center_pos.y
+        eePosition.z = center_pos.z + 0.28
+        eePose.position = eePosition
+        eeOrientation = quaternion_from_euler(np.pi, 0, -np.pi / 4)
+        eePose.orientation = eeOrientation
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        eePose.position.z -= 0.11
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        eePose.position.x += 0.11
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        return response
+
+    async def strike_ball(self, que_pose):
+        # Caroline, this is where we woulc call you function
+        # Or pass it into function
+        eePose = Pose()
+
+        # Standoff position
+        eePose.z += 0.28
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+
+        # Strike position
+        eePose.position.z -= 0.11
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+
+        # Hit through
+        eeMotion = Pose()
+        # Move along x axis of ee
+        eeMotion.x = 0.11
+        eePose = self.world.strikeTransform(eeMotion)
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
 
     def setup_scene(self):
         tableWidth = 2.0
