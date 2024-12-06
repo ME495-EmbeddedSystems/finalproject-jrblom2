@@ -7,8 +7,6 @@
     <node pkg='rviz2' exec='rviz2' args="-d $(var rviz_config)"/>
 
     <!-- <node pkg='poolinator' exec='bridger' name='bridger'>
-        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
-        <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
 
     <node pkg='apriltag_ros' exec='apriltag_node'>
@@ -17,7 +15,12 @@
         <remap from='camera_info' to='/camera/camera_info'/>
     </node> -->
 
-    <node pkg='poolinator' exec='colorsNode' name='colorsNode' output='screen'>
+    <!-- <node pkg='poolinator' exec='colorsNode' name='colorsNode' output='screen'>
+        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
+        <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
+    </node> -->
+
+    <node pkg='poolinator' exec='bridger' name='bridger' output='screen'>
         <remap from='rgb_image' to='/camera/camera/color/image_raw' />
         <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
