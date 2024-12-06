@@ -1,3 +1,4 @@
+import math
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -13,6 +14,9 @@ import pyrealsense2 as rs2
 if (not hasattr(rs2, 'intrinsics')):
     import pyrealsense2.pyrealsense2 as rs2
 
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
 
 """
 -y
@@ -23,6 +27,29 @@ if (not hasattr(rs2, 'intrinsics')):
 |
 +y
 """
+
+def quaternion_from_euler(ai, aj, ak):
+    ai /= 2.0
+    aj /= 2.0
+    ak /= 2.0
+    ci = math.cos(ai)
+    si = math.sin(ai)
+    cj = math.cos(aj)
+    sj = math.sin(aj)
+    ck = math.cos(ak)
+    sk = math.sin(ak)
+    cc = ci * ck
+    cs = ci * sk
+    sc = si * ck
+    ss = si * sk
+
+    q = np.empty((4,))
+    q[0] = cj * sc - sj * cs
+    q[1] = cj * ss + sj * cc
+    q[2] = cj * cs - sj * sc
+    q[3] = cj * cc + sj * ss
+
+    return q
 
 class BridgeNode(Node):
     """
@@ -64,6 +91,35 @@ class BridgeNode(Node):
         self.ball_y = None
         self.ball_z = None
 
+        self.tf_broadcaster = TransformBroadcaster(self)
+
+    def broadcast_camera_to_redball(self):
+        # Try until publish succeds, cant continue without this
+        try:
+            t = TransformStamped()
+
+            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.frame_id = 'camera_color_frame'
+            t.child_frame_id = 'red_ball'
+
+            t.transform.translation.x = self.ball_x
+            t.transform.translation.y = self.ball_y
+            t.transform.translation.z = -self.ball_z
+
+            q = quaternion_from_euler(0, 0, 0)
+            t.transform.rotation.x = q[0]
+            t.transform.rotation.y = q[1]
+            t.transform.rotation.z = q[2]
+            t.transform.rotation.w = q[3]
+
+            self.tf_broadcaster.sendTransform(t)
+            self.get_logger().info(
+                f"Published transform from {t.header.frame_id} to {t.child_frame_id}"
+            )
+            return
+        except Exception as e:
+            self.get_logger().error(f"Failed to publish transform: {e}")
+
     def imageDepthCallback(self, data):
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
@@ -88,7 +144,6 @@ class BridgeNode(Node):
             return
         except ValueError as e:
             return
-
 
     def imageDepthInfoCallback(self, cameraInfo):
         try:
@@ -140,12 +195,13 @@ class BridgeNode(Node):
         if cx and cy and self.depth_value:
             coords = self.pixel_to_world(cx, cy, self.depth_value)
             if coords:
-                self.get_logger().info(f'x in world {coords[0]}')
-                self.get_logger().info(f'y in world {coords[1]}')
-                self.get_logger().info(f'z in world {coords[2]}')
                 self.ball_x = coords[0]
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
+
+                self.get_logger().info(f'x in world {self.ball_x}')
+                self.get_logger().info(f'y in world {self.ball_y}')
+                self.get_logger().info(f'z in world {self.ball_z}')
 
         self.pub.publish(new_msg)
 
@@ -204,7 +260,8 @@ class BridgeNode(Node):
         return None
 
     def timer_callback(self):
-        pass
+        self.broadcast_camera_to_redball()
+        # pass
 
     def destroy_node(self):
         self.pipeline.stop()
