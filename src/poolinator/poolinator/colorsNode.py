@@ -10,8 +10,8 @@ class ImageProcessorColors(Node):
     def __init__(self):
         super().__init__('image_processor_colors')
         self.bridge = CvBridge()
-        self.create_subscription(Image, 'rgb_image', self.rgb_process, 10)
-        # self.create_subscription(Image, 'depth_image', self.depth_process, 10)
+        # self.create_subscription(Image, 'rgb_image', self.rgb_process, 10)
+        self.create_subscription(Image, 'depth_image', self.depth_process, 10)
         self.pub = self.create_publisher(Image, 'new_image', 10)
 
         timer_period = 0.05 #secs
@@ -53,17 +53,20 @@ class ImageProcessorColors(Node):
 
         self.pub.publish(new_msg)
 
-    # def depth_process(self, image):
-    #     """
-    #     Callback to process the depth image.
-    #     """
-    #     depth_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='16UC1')
-    #     if self.cx and self.cy:
-    #         cx = self.cx
-    #         cy = self.cy
-    #         self.depth_value = depth_image[cy,cx]
-    #     # new_msg = self.bridge.cv2_to_imgmsg(depth_image, encoding='16UC1')
-    #     # self.pub.publish(new_msg)
+    def depth_process(self, image):
+        """
+        Callback to process the depth image.
+        """
+        depth_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='16UC1')
+        if self.cx and self.cy:
+            cx = self.cx
+            cy = self.cy
+            self.depth_value = depth_image[cy,cx]
+
+        self.get_logger().info(f'in depth process: {depth_image}')
+
+        new_msg = self.bridge.cv2_to_imgmsg(depth_image, encoding='16UC1')
+        self.pub.publish(new_msg)
 
 
     def find_center_of_mass(self, mask):
