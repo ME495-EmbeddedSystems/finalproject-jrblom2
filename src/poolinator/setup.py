@@ -28,9 +28,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'bridger = poolinator.bridger:main',
             'bridger2 = poolinator.bridger2:main',
-            # 'transform = poolinator.transform:main'
-
         ],
     },
 )
