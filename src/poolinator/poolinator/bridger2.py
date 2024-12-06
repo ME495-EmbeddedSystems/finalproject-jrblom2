@@ -199,9 +199,9 @@ class BridgeNode2(Node):
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
 
-                self.get_logger().info(f'x in world {self.ball_x}')
-                self.get_logger().info(f'y in world {self.ball_y}')
-                self.get_logger().info(f'z in world {self.ball_z}')
+                # self.get_logger().info(f'x in world {self.ball_x}')
+                # self.get_logger().info(f'y in world {self.ball_y}')
+                # self.get_logger().info(f'z in world {self.ball_z}')
 
         self.pub.publish(new_msg)
 

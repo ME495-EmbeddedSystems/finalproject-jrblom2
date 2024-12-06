@@ -20,7 +20,7 @@
         <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node> -->
 
-    <node pkg='poolinator' exec='bridger' name='bridger' output='screen'>
+    <node pkg='poolinator' exec='bridger2' name='bridger2' output='screen'>
         <remap from='rgb_image' to='/camera/camera/color/image_raw' />
         <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
