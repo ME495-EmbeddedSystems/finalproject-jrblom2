@@ -25,7 +25,6 @@ class ImageProcessorColors(Node):
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        # self.depth_image = None
         self.cx = None
         self.cy = None
         self.depth_value = None
@@ -39,17 +38,12 @@ class ImageProcessorColors(Node):
         self.pix = None
         self.pix_grade = None
 
-        self.is_converting_to_world = False
-        self.u = None
-        self.v = None
-        self.depth_value = None
-
         # TODO: find how to find this
         self.depth_scale = 1
 
 
     def imageDepthCallback(self, data):
-        self.get_logger().info(f'INNNN in imageDepthCallback!!!!!!!!!!!!!!!!!!!!')
+        # self.get_logger().info(f'INNNN in imageDepthCallback!!!!!!!!!!!!!!!!!!!!')
 
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
@@ -77,7 +71,7 @@ class ImageProcessorColors(Node):
 
 
     def imageDepthInfoCallback(self, cameraInfo):
-        self.get_logger().info(f'INNNN in imageDepthInfoCallback!!!!!!!!!!!!!!!!!!!!')
+        # self.get_logger().info(f'INNNN in imageDepthInfoCallback!!!!!!!!!!!!!!!!!!!!')
 
         try:
             if self.intrinsics:
@@ -89,27 +83,6 @@ class ImageProcessorColors(Node):
             self.intrinsics.ppy = cameraInfo.k[5]
             self.intrinsics.fx = cameraInfo.k[0]
             self.intrinsics.fy = cameraInfo.k[4]
-
-            if self.is_converting_to_world:
-                self.get_logger().info(f'converting in imageDepthInfoCallback!!!!!!!!!!!!!!!!!!!!')
-                fx = self.intrinsics.fx
-                fy = self.intrinsics.fy
-                cx = self.intrinsics.ppx 
-                cy = self.intrinsics.ppy 
-
-                # self.get_logger().info(f'fx: {fx}')
-                # self.get_logger().info(f'fy: {fy}')
-                # self.get_logger().info(f'cx: {cx}')
-                # self.get_logger().info(f'cy: {cy}')
-
-                # Convert pixel (u, v) and depth to world coordinates
-                z = self.depth_value * self.depth_scale  # Convert depth to meters
-                x = (self.u - cx) * z / fx
-                y = (self.v - cy) * z / fy
-
-                self.get_logger().info(f'x: {x}')
-                self.get_logger().info(f'y: {y}')
-                self.get_logger().info(f'z: {z}')
 
             if cameraInfo.distortion_model == 'plumb_bob':
                 self.intrinsics.model = rs2.distortion.brown_conrady
@@ -214,26 +187,25 @@ class ImageProcessorColors(Node):
         self.v = v
         self.depth_value = depth_value
 
-        # if self.intrinsics:
-        #     if self.intrinsics.ppx and self.intrinsics.ppy and self.intrinsics.fx and self.intrinsics.fy:
-        #         fx = self.intrinsics.fx
-        #         fy = self.intrinsics.fy
-        #         cx = self.intrinsics.ppx 
-        #         cy = self.intrinsics.ppy 
+        if self.intrinsics:
+            fx = self.intrinsics.fx
+            fy = self.intrinsics.fy
+            cx = self.intrinsics.ppx 
+            cy = self.intrinsics.ppy 
 
-        #         # self.get_logger().info(f'fx: {fx}')
-        #         # self.get_logger().info(f'fy: {fy}')
-        #         # self.get_logger().info(f'cx: {cx}')
-        #         # self.get_logger().info(f'cy: {cy}')
+            # self.get_logger().info(f'fx: {fx}')
+            # self.get_logger().info(f'fy: {fy}')
+            # self.get_logger().info(f'cx: {cx}')
+            # self.get_logger().info(f'cy: {cy}')
 
-        #         # Convert pixel (u, v) and depth to world coordinates
-        #         z = depth_value * self.depth_scale  # Convert depth to meters
-        #         x = (u - cx) * z / fx
-        #         y = (v - cy) * z / fy
+            # Convert pixel (u, v) and depth to world coordinates
+            z = depth_value * self.depth_scale  # Convert depth to meters
+            x = (u - cx) * z / fx
+            y = (v - cy) * z / fy
 
-        #         self.get_logger().info(f'x: {x}')
-        #         self.get_logger().info(f'y: {y}')
-        #         self.get_logger().info(f'z: {z}')
+            self.get_logger().info(f'x: {x}')
+            self.get_logger().info(f'y: {y}')
+            # self.get_logger().info(f'z: {z}')
 
         #         return [x, y, z]
         # return None
@@ -247,8 +219,8 @@ class ImageProcessorColors(Node):
         super().destroy_node()
 
 def main():
-    depth_image_topic = '/camera/depth/image_rect_raw'
-    depth_info_topic = '/camera/depth/camera_info'
+    depth_image_topic = '/camera/camera/depth/image_rect_raw'
+    depth_info_topic = '/camera/camera/depth/camera_info'
 
     rclpy.init()
     n = ImageProcessorColors(depth_image_topic, depth_info_topic)
