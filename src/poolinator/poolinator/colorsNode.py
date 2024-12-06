@@ -39,8 +39,18 @@ class ImageProcessorColors(Node):
         self.pix = None
         self.pix_grade = None
 
+        self.is_converting_to_world = False
+        self.u = None
+        self.v = None
+        self.depth_value = None
+
+        # TODO: find how to find this
+        self.depth_scale = 1
+
 
     def imageDepthCallback(self, data):
+        self.get_logger().info(f'INNNN in imageDepthCallback!!!!!!!!!!!!!!!!!!!!')
+
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
             # pick one pixel among all the pixels with the closest range:
@@ -67,6 +77,8 @@ class ImageProcessorColors(Node):
 
 
     def imageDepthInfoCallback(self, cameraInfo):
+        self.get_logger().info(f'INNNN in imageDepthInfoCallback!!!!!!!!!!!!!!!!!!!!')
+
         try:
             if self.intrinsics:
                 return
@@ -77,6 +89,28 @@ class ImageProcessorColors(Node):
             self.intrinsics.ppy = cameraInfo.k[5]
             self.intrinsics.fx = cameraInfo.k[0]
             self.intrinsics.fy = cameraInfo.k[4]
+
+            if self.is_converting_to_world:
+                self.get_logger().info(f'converting in imageDepthInfoCallback!!!!!!!!!!!!!!!!!!!!')
+                fx = self.intrinsics.fx
+                fy = self.intrinsics.fy
+                cx = self.intrinsics.ppx 
+                cy = self.intrinsics.ppy 
+
+                # self.get_logger().info(f'fx: {fx}')
+                # self.get_logger().info(f'fy: {fy}')
+                # self.get_logger().info(f'cx: {cx}')
+                # self.get_logger().info(f'cy: {cy}')
+
+                # Convert pixel (u, v) and depth to world coordinates
+                z = self.depth_value * self.depth_scale  # Convert depth to meters
+                x = (self.u - cx) * z / fx
+                y = (self.v - cy) * z / fy
+
+                self.get_logger().info(f'x: {x}')
+                self.get_logger().info(f'y: {y}')
+                self.get_logger().info(f'z: {z}')
+
             if cameraInfo.distortion_model == 'plumb_bob':
                 self.intrinsics.model = rs2.distortion.brown_conrady
             elif cameraInfo.distortion_model == 'equidistant':
@@ -113,11 +147,12 @@ class ImageProcessorColors(Node):
             self.cy = cy
         
         if cx and cy and self.depth_value:
+            self.pixel_to_world(cx, cy, self.depth_value)
             # self.pixel_to_world(cx, cy, self.depth_value)
-            coords = self.pixel_to_world(cx, cy, self.depth_value)
-            if coords:
-                # self.get_logger().info(f'Ball in world at {x}, {y}, {z}')
-                self.get_logger().info(f'Ball in world at {coords[0]}, {coords[1]}, {coords[2]}')
+            # coords = self.pixel_to_world(cx, cy, self.depth_value)
+            # if coords:
+            #     # self.get_logger().info(f'Ball in world at {x}, {y}, {z}')
+            #     self.get_logger().info(f'Ball in world at {coords[0]}, {coords[1]}, {coords[2]}')
 
         self.pub.publish(new_msg)
 
@@ -174,26 +209,34 @@ class ImageProcessorColors(Node):
             tuple: (x, y, z) world coordinates in meters.
         """
         self.get_logger().info(f'in pixel_to_world')
-        if self.intrinsics:
-            if self.intrinsics.ppx and self.intrinsics.ppy and self.intrinsics.fx and self.intrinsics.fy:
-                fx = self.intrinsics.fx
-                fy = self.intrinsics.fy
-                cx = self.intrinsics.ppx 
-                cy = self.intrinsics.ppy 
+        self.is_converting_to_world = True
+        self.u = u
+        self.v = v
+        self.depth_value = depth_value
 
-                # self.get_logger().info(f'fx: {fx}')
-                # self.get_logger().info(f'fy: {fy}')
-                # self.get_logger().info(f'cx: {cx}')
-                # self.get_logger().info(f'cy: {cy}')
+        # if self.intrinsics:
+        #     if self.intrinsics.ppx and self.intrinsics.ppy and self.intrinsics.fx and self.intrinsics.fy:
+        #         fx = self.intrinsics.fx
+        #         fy = self.intrinsics.fy
+        #         cx = self.intrinsics.ppx 
+        #         cy = self.intrinsics.ppy 
 
+        #         # self.get_logger().info(f'fx: {fx}')
+        #         # self.get_logger().info(f'fy: {fy}')
+        #         # self.get_logger().info(f'cx: {cx}')
+        #         # self.get_logger().info(f'cy: {cy}')
 
-                # Convert pixel (u, v) and depth to world coordinates
-                z = depth_value * self.depth_scale  # Convert depth to meters
-                x = (u - cx) * z / fx
-                y = (v - cy) * z / fy
+        #         # Convert pixel (u, v) and depth to world coordinates
+        #         z = depth_value * self.depth_scale  # Convert depth to meters
+        #         x = (u - cx) * z / fx
+        #         y = (v - cy) * z / fy
 
-                return [x, y, z]
-        return None
+        #         self.get_logger().info(f'x: {x}')
+        #         self.get_logger().info(f'y: {y}')
+        #         self.get_logger().info(f'z: {z}')
+
+        #         return [x, y, z]
+        # return None
 
     def timer_callback(self):
         # self.get_logger().info('IN TIMERRRR')
