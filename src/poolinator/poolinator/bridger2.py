@@ -51,7 +51,7 @@ def quaternion_from_euler(ai, aj, ak):
 
     return q
 
-class BridgeNode(Node):
+class BridgeNode2(Node):
     """
     Node that reads images and draws on them using open cv.
 
@@ -272,7 +272,7 @@ def main():
     depth_info_topic = '/camera/camera/depth/camera_info'
 
     rclpy.init()
-    n = BridgeNode(depth_image_topic, depth_info_topic)
+    n = BridgeNode2(depth_image_topic, depth_info_topic)
     rclpy.spin(n)
     n.destroy_node()
     rclpy.shutdown()    
