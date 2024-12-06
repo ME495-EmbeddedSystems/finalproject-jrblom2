@@ -22,7 +22,9 @@ setup(
         ),
         (
             'share/' + package_name + '/config',
-            ['config/default.rviz', 'config/tags.yaml'],
+            ['config/default.rviz',
+             'config/redball.rviz', 
+             'config/tags.yaml'],
         ),
     ],
     install_requires=['setuptools'],

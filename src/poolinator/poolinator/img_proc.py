@@ -103,8 +103,8 @@ class ImageProcessNode(Node):
             t.child_frame_id = 'red_ball'
 
             t.transform.translation.x = self.ball_x
-            t.transform.translation.y = self.ball_y
-            t.transform.translation.z = -self.ball_z
+            t.transform.translation.y = -self.ball_y
+            t.transform.translation.z = self.ball_z
 
             q = quaternion_from_euler(0, 0, 0)
             t.transform.rotation.x = q[0]
@@ -198,10 +198,6 @@ class ImageProcessNode(Node):
                 self.ball_x = coords[0]
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
-
-                # self.get_logger().info(f'x in world {self.ball_x}')
-                # self.get_logger().info(f'y in world {self.ball_y}')
-                # self.get_logger().info(f'z in world {self.ball_z}')
 
         self.pub.publish(new_msg)
 
