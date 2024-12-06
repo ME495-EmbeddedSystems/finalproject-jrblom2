@@ -110,7 +110,7 @@ class BridgeNode(Node):
     def lookup_cuetag_to_camera(self):
         # Store frame names in variables that will be used to
         # compute transformations
-        from_frame_cam = 'tagStandard41h12:4'
+        from_frame_cam = 'camera_que_tag'
         to_frame_cam = 'camera_link'
 
         from_frame_que = 'base'

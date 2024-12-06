@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 
 from poolinator.world import World
+from poolinator.bridger import quaternion_from_euler
 
 from motion_planning_interface.MotionPlanningInterface import (
     MotionPlanningInterface,
@@ -46,12 +47,7 @@ class ControlNode(Node):
         self.mp_interface = MotionPlanningInterface(self)
         self.world = World(
             self,
-            [
-                'tagStandard41h12:0',
-                'tagStandard41h12:1',
-                'tagStandard41h12:2',
-                'tagStandard41h12:3',
-            ],
+            'table_tag',
             ['b1'],
         )
 
@@ -59,19 +55,18 @@ class ControlNode(Node):
 
     def timer_callback(self):
         # Stay in setup state until pool table frames exist from CV
-        # if self.state == State.SETUP:
-        #     if self.world.tableExists():
-        #         # Add planning scene objects here before running
-        #         self.setup_scene()
-        #         self.state = State.RUNNING
-        #     return
+        if self.state == State.SETUP:
+            if self.world.tableExists():
+                # Add planning scene objects here before running
+                self.setup_scene()
+                self.state = State.RUNNING
+            return
 
-        # if self.state == State.RUNNING:
-        #     self.get_logger().info(f"{self.world.pocketPositions()}")
-        pass
+        if self.state == State.RUNNING:
+            self.get_logger().info(f"{self.world.pocketPositions()}")
 
     async def move_c1_callback(self, request, response):
-        pocket_pos = self.table.pocketPositions()
+        pocket_pos = self.world.pocketPositions()
         c1 = pocket_pos[0]
         eePose = Pose()
         eePosition = Point()
@@ -79,9 +74,7 @@ class ControlNode(Node):
         eePosition.y = c1.y
         eePosition.z = c1.z + 0.2
         eePose.position = eePosition
-        eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi / 2)
-        eeOrientation.x = np.sin(np.pi / 2)
+        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
@@ -89,7 +82,7 @@ class ControlNode(Node):
         return response
 
     async def move_c2_callback(self, request, response):
-        pocket_pos = self.table.pocketPositions()
+        pocket_pos = self.world.pocketPositions()
         c2 = pocket_pos[2]
         eePose = Pose()
         eePosition = Point()
@@ -97,9 +90,7 @@ class ControlNode(Node):
         eePosition.y = c2.y
         eePosition.z = c2.z + 0.2
         eePose.position = eePosition
-        eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi / 2)
-        eeOrientation.x = np.sin(np.pi / 2)
+        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
@@ -107,7 +98,7 @@ class ControlNode(Node):
         return response
 
     async def move_c3_callback(self, request, response):
-        pocket_pos = self.table.pocketPositions()
+        pocket_pos = self.world.pocketPositions()
         c3 = pocket_pos[3]
         eePose = Pose()
         eePosition = Point()
@@ -115,9 +106,7 @@ class ControlNode(Node):
         eePosition.y = c3.y
         eePosition.z = c3.z + 0.2
         eePose.position = eePosition
-        eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi / 2)
-        eeOrientation.x = np.sin(np.pi / 2)
+        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
@@ -125,7 +114,7 @@ class ControlNode(Node):
         return response
 
     async def move_c4_callback(self, request, response):
-        pocket_pos = self.table.pocketPositions()
+        pocket_pos = self.world.pocketPositions()
         c4 = pocket_pos[5]
         eePose = Pose()
         eePosition = Point()
@@ -133,9 +122,7 @@ class ControlNode(Node):
         eePosition.y = c4.y
         eePosition.z = c4.z + 0.2
         eePose.position = eePosition
-        eeOrientation = Quaternion()
-        eeOrientation.w = np.cos(np.pi / 2)
-        eeOrientation.x = np.sin(np.pi / 2)
+        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
         eePose.orientation = eeOrientation
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
