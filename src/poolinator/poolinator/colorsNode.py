@@ -39,12 +39,10 @@ class ImageProcessorColors(Node):
         self.pix_grade = None
 
         # TODO: find how to find this
-        self.depth_scale = 1
+        self.depth_scale = 0.001
 
 
     def imageDepthCallback(self, data):
-        # self.get_logger().info(f'INNNN in imageDepthCallback!!!!!!!!!!!!!!!!!!!!')
-
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
             # pick one pixel among all the pixels with the closest range:
@@ -71,8 +69,6 @@ class ImageProcessorColors(Node):
 
 
     def imageDepthInfoCallback(self, cameraInfo):
-        # self.get_logger().info(f'INNNN in imageDepthInfoCallback!!!!!!!!!!!!!!!!!!!!')
-
         try:
             if self.intrinsics:
                 return
@@ -182,11 +178,6 @@ class ImageProcessorColors(Node):
             tuple: (x, y, z) world coordinates in meters.
         """
         self.get_logger().info(f'in pixel_to_world')
-        self.is_converting_to_world = True
-        self.u = u
-        self.v = v
-        self.depth_value = depth_value
-
         if self.intrinsics:
             fx = self.intrinsics.fx
             fy = self.intrinsics.fy
@@ -205,7 +196,7 @@ class ImageProcessorColors(Node):
 
             self.get_logger().info(f'x: {x}')
             self.get_logger().info(f'y: {y}')
-            # self.get_logger().info(f'z: {z}')
+            self.get_logger().info(f'z: {z}')
 
         #         return [x, y, z]
         # return None
