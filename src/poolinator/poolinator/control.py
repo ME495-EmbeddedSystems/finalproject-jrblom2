@@ -184,6 +184,9 @@ class ControlNode(Node):
         poseTable.position.x = 0.0
         poseTable.position.y = 0.0
         poseTable.position.z = -tableHeight / 2 - 0.01
+        self.mp_interface.ps.add_box(
+            'table', (tableWidth, tableLength, tableHeight), poseTable
+        )
 
         cameraWidth = 0.1
         cameraLength = 1.0
@@ -194,12 +197,24 @@ class ControlNode(Node):
         poseCamera.position.x = cameraPoint.x
         poseCamera.position.y = cameraPoint.y
         poseCamera.position.z = cameraPoint.z
-
-        self.mp_interface.ps.add_box(
-            'table', (tableWidth, tableLength, tableHeight), poseTable
-        )
         self.mp_interface.ps.add_box(
             'camera', (cameraWidth, cameraLength, cameraHeight), poseCamera
+        )
+
+        poolTableWidth = 0.31
+        poolTableLength = 0.51
+        # make it a little shorter than real to not be too restrictive
+        poolTableHeight = 0.08
+
+        posePoolTable = Pose()
+        poolTablePoint = self.world.center()
+        posePoolTable.position.x = poolTablePoint.x
+        posePoolTable.position.y = poolTablePoint.y
+        posePoolTable.position.z = poolTablePoint.z - 0.045
+        self.mp_interface.ps.add_box(
+            'poolTable',
+            (poolTableWidth, poolTableLength, poolTableHeight),
+            posePoolTable,
         )
 
 
