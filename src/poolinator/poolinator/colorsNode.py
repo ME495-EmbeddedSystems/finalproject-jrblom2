@@ -1,25 +1,30 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
 import cv2 as cv
 import cv2 as cv2
-import numpy as np
 
-import pyrealsense2 as rs
+from sensor_msgs.msg import Image as msg_Image
+from sensor_msgs.msg import CameraInfo
+from cv_bridge import CvBridge, CvBridgeError
+import sys
+import os
+import numpy as np
+import pyrealsense2 as rs2
+if (not hasattr(rs2, 'intrinsics')):
+    import pyrealsense2.pyrealsense2 as rs2
 
 class ImageProcessorColors(Node):
-    def __init__(self):
+    def __init__(self, depth_image_topic, depth_info_topic):
         super().__init__('image_processor_colors')
         self.bridge = CvBridge()
-        self.create_subscription(Image, 'rgb_image', self.rgb_process, 10)
-        self.create_subscription(Image, 'depth_image', self.depth_process, 10)
-        self.pub = self.create_publisher(Image, 'new_image', 10)
+        self.create_subscription(msg_Image, 'rgb_image', self.rgb_process, 10)
+        self.create_subscription(msg_Image, 'depth_image', self.depth_process, 10)
+        self.pub = self.create_publisher(msg_Image, 'new_image', 10)
 
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        # Placeholder for depth image
         # self.depth_image = None
         self.cx = None
         self.cy = None
@@ -28,12 +33,58 @@ class ImageProcessorColors(Node):
         self.rgb_image_height = None
         self.rgb_image_width = None
 
-        self.pipeline = rs.pipeline()
-        config = rs.config()
-        config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-        self.profile = self.pipeline.start(config)
-        self.depth_scale = self.profile.get_device().first_depth_sensor().get_depth_scale()
+        self.sub = self.create_subscription(msg_Image, depth_image_topic, self.imageDepthCallback, 1)
+        self.sub_info = self.create_subscription(CameraInfo, depth_info_topic, self.imageDepthInfoCallback, 1)
+        self.intrinsics = None
+        self.pix = None
+        self.pix_grade = None
+
+
+    def imageDepthCallback(self, data):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
+            # pick one pixel among all the pixels with the closest range:
+            indices = np.array(np.where(cv_image == cv_image[cv_image > 0].min()))[:,0]
+            pix = (indices[1], indices[0])
+            self.pix = pix
+            line = '\rDepth at pixel(%3d, %3d): %7.1f(mm).' % (pix[0], pix[1], cv_image[pix[1], pix[0]])
+
+            if self.intrinsics:
+                depth = cv_image[pix[1], pix[0]]
+                result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [pix[0], pix[1]], depth)
+                line += '  Coordinate: %8.2f %8.2f %8.2f.' % (result[0], result[1], result[2])
+            if (not self.pix_grade is None):
+                line += ' Grade: %2d' % self.pix_grade
+            line += '\r'
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+        except CvBridgeError as e:
+            print(e)
+            return
+        except ValueError as e:
+            return
+
+
+    def imageDepthInfoCallback(self, cameraInfo):
+        try:
+            if self.intrinsics:
+                return
+            self.intrinsics = rs2.intrinsics()
+            self.intrinsics.width = cameraInfo.width
+            self.intrinsics.height = cameraInfo.height
+            self.intrinsics.ppx = cameraInfo.k[2]
+            self.intrinsics.ppy = cameraInfo.k[5]
+            self.intrinsics.fx = cameraInfo.k[0]
+            self.intrinsics.fy = cameraInfo.k[4]
+            if cameraInfo.distortion_model == 'plumb_bob':
+                self.intrinsics.model = rs2.distortion.brown_conrady
+            elif cameraInfo.distortion_model == 'equidistant':
+                self.intrinsics.model = rs2.distortion.kannala_brandt4
+            self.intrinsics.coeffs = [i for i in cameraInfo.d]
+        except CvBridgeError as e:
+            print(e)
+            return
 
     def rgb_process(self, image):
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
@@ -62,9 +113,11 @@ class ImageProcessorColors(Node):
             self.cy = cy
         
         if cx and cy and self.depth_value:
-            x, y, z = self.pixel_to_world(cx, cy, self.depth_value)
-            # x, y, z = cx, cy, self.depth_value
-            self.get_logger().info(f'Ball in world at {x}, {y}, {z}')
+            # self.pixel_to_world(cx, cy, self.depth_value)
+            coords = self.pixel_to_world(cx, cy, self.depth_value)
+            if coords:
+                # self.get_logger().info(f'Ball in world at {x}, {y}, {z}')
+                self.get_logger().info(f'Ball in world at {coords[0]}, {coords[1]}, {coords[2]}')
 
         self.pub.publish(new_msg)
 
@@ -120,25 +173,43 @@ class ImageProcessorColors(Node):
         Returns:
             tuple: (x, y, z) world coordinates in meters.
         """
-        intrinsics = self.profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
-        fx = intrinsics.fx
-        fy = intrinsics.fy
-        cx = intrinsics.ppx
-        cy = intrinsics.ppy
+        self.get_logger().info(f'in pixel_to_world')
+        if self.intrinsics:
+            if self.intrinsics.ppx and self.intrinsics.ppy and self.intrinsics.fx and self.intrinsics.fy:
+                fx = self.intrinsics.fx
+                fy = self.intrinsics.fy
+                cx = self.intrinsics.ppx 
+                cy = self.intrinsics.ppy 
 
-        # Convert pixel (u, v) and depth to world coordinates
-        z = depth_value * self.depth_scale  # Convert depth to meters
-        x = (u - cx) * z / fx
-        y = (v - cy) * z / fy
+                # self.get_logger().info(f'fx: {fx}')
+                # self.get_logger().info(f'fy: {fy}')
+                # self.get_logger().info(f'cx: {cx}')
+                # self.get_logger().info(f'cy: {cy}')
 
-        return x, y, z
 
+                # Convert pixel (u, v) and depth to world coordinates
+                z = depth_value * self.depth_scale  # Convert depth to meters
+                x = (u - cx) * z / fx
+                y = (v - cy) * z / fy
+
+                return [x, y, z]
+        return None
 
     def timer_callback(self):
         # self.get_logger().info('IN TIMERRRR')
         pass
 
+    def destroy_node(self):
+        self.pipeline.stop()
+        super().destroy_node()
+
 def main():
+    depth_image_topic = '/camera/depth/image_rect_raw'
+    depth_info_topic = '/camera/depth/camera_info'
+
     rclpy.init()
-    n = ImageProcessorColors()
+    n = ImageProcessorColors(depth_image_topic, depth_info_topic)
     rclpy.spin(n)
+    n.destroy_node()
+    rclpy.shutdown()    
+
