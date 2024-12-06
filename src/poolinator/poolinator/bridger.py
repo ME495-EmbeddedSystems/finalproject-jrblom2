@@ -43,7 +43,7 @@ def quaternion_from_euler(ai, aj, ak):
     return q
 
 
-class transformNode(Node):
+class BridgeNode(Node):
     """
     Node that ...
 
@@ -152,5 +152,5 @@ class transformNode(Node):
 
 def main():
     rclpy.init()
-    n = transformNode()
+    n = BridgeNode()
     rclpy.spin(n)
