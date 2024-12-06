@@ -6,7 +6,7 @@
     
     <node pkg='rviz2' exec='rviz2' args="-d $(var rviz_config)"/>
 
-    <node pkg='poolinator' exec='bridger' name='bridger'>
+    <!-- <node pkg='poolinator' exec='bridger' name='bridger'>
         <remap from='rgb_image' to='/camera/camera/color/image_raw' />
         <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
@@ -15,6 +15,10 @@
         <param from='$(find-pkg-share poolinator)/config/tags.yaml' />
         <remap from='image_rect' to='/camera/camera/color/image_raw'/>
         <remap from='camera_info' to='/camera/camera_info'/>
+    </node> -->
+
+    <node pkg='poolinator' exec='colorsNode' name='colorsNode' output='screen'>
+         <remap from='image' to='/camera/camera/color/image_raw' />
     </node>
 
 </launch>

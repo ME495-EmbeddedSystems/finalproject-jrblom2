@@ -1,6 +1,10 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 
 class RealSenseCamera:
     def __init__(self, width=640, height=480, fps=30, record_filename=None, play_back=None):
@@ -159,14 +163,40 @@ class RealSenseCamera:
             print("No red ball detected!")
             return None, None, None
         
+        # lets get the depth value at cx, cy
+        depth_value = depth_image[cy,cx]
 
 
 
-        return red_ball_mask, red_ball
+        return red_ball_mask, (cx, cy), depth_value
 
 
     def stop(self):
         self.pipeline.stop()
+
+    def pixel_to_world(self, u, v, depth_value):
+        """
+        Convert pixel coordinates (u, v) and depth to world coordinates.
+        Parameters:
+            u (int): Pixel x-coordinate.
+            v (int): Pixel y-coordinate.
+            depth_value (float): Depth value at (u, v).
+        Returns:
+            tuple: (x, y, z) world coordinates in meters.
+        """
+        intrinsics = self.profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
+        fx = intrinsics.fx
+        fy = intrinsics.fy
+        cx = intrinsics.ppx
+        cy = intrinsics.ppy
+
+        # Convert pixel (u, v) and depth to world coordinates
+        z = depth_value * self.depth_scale  # Convert depth to meters
+        x = (u - cx) * z / fx
+        y = (v - cy) * z / fy
+
+        return x, y, z
+
 
 
 
@@ -209,7 +239,7 @@ if __name__ == "__main__":
         while True:
             counter += 1
             print(f'Processing frame {counter}')
-
+#############THIS NEED TO BE IN MY NODE WHEN I GET THE IMAGE THE RIGHT WAY$#################
             depth_image, color_image = camera.get_aligned_frames()
 
             if depth_image is None or color_image is None:
@@ -219,14 +249,17 @@ if __name__ == "__main__":
             images = camera.process_frames(depth_image, color_image)
 
             # Track the red ball
-            red_mask, red_ball = camera.color_tracking(color_image, depth_image)
+            red_mask, center, depth_value = camera.color_tracking(color_image, depth_image)
 
+            if center is not None and depth_value > 0:
+                cx, cy = center
+                x, y, z = camera.pixel_to_world(cx, cy, depth_value)
+                print(f"Red ball position: x={x:.2f} m, y={y:.2f} m, z={z:.2f} m")
+#################################################### UP UNTIL HERE
             # Display the frames
-            if camera.display_frames(images, mask=red_mask, res=red_ball):
+            if camera.display_frames(images, mask=red_mask, res=None, distance=depth_value * camera.depth_scale):
                 break
 
-            # Track the red ball and calculate distance
-            red_mask, red_ball = camera.color_tracking(color_image, depth_image)
     finally:
         camera.stop()
 
