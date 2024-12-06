@@ -3,6 +3,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2 as cv
+import cv2 as cv2
 import numpy as np
 
 class ImageProcessorColors(Node):
@@ -15,8 +16,6 @@ class ImageProcessorColors(Node):
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        # super().__init__('image_processor_colors')
-        # self.bridge = CvBridge()
 
         # # Subscribing to the RGB and Depth image topics
         # self.rgb_subscription = self.create_subscription(
@@ -35,19 +34,26 @@ class ImageProcessorColors(Node):
         # # Placeholder for depth image
         # self.depth_image = None
 
-        # self.get_logger().info("Subscriptions created for RGB and Depth image topics.")
+        self.get_logger().info("Subscriptions created for RGB and Depth image topics.")
 
 
     def opencv_process(self, image):
         """Draw a circle on the subscribed image and republish it to new_image."""
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
-        cv.circle(cv_image, (200, 200), 40, (0, 0, 255), -1)
-        new_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
+        hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
+        lower_red1 = np.array([0, 100, 100])
+        upper_red1 = np.array([10, 255, 255])
+        lower_red2 = np.array([160, 100, 100])
+        upper_red2 = np.array([180, 255, 255])
+        mask1 = cv2.inRange(hsv_image, lower_red1, upper_red1)
+        mask2 = cv2.inRange(hsv_image, lower_red2, upper_red2)
+        red_mask = cv2.bitwise_or(mask1, mask2)
+        res = cv2.bitwise_and(hsv_image,hsv_image,mask = red_mask)
+        new_msg = self.bridge.cv2_to_imgmsg(res, encoding='bgr8')
         self.pub.publish(new_msg)
 
     def timer_callback(self):
         self.get_logger().info('IN TIMERRRR')
-    
     
     # def process_rgb_image(self, msg):
     #     try:
