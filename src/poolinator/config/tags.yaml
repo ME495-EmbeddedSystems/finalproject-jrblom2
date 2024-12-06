@@ -3,7 +3,7 @@ apriltag:                 # node name
     # setup (defaults)
     image_transport: raw  # image format: "raw" or "compressed"
     family: Standard41h12         # tag family name: 16h5, 25h9, 36h11
-    size: 0.015             # default tag edge size in meter
+    size: 0.12             # default tag edge size in meter
     profile: false        # print profiling information to stdout
 
     # tuning of detection (defaults)
@@ -21,5 +21,5 @@ apriltag:                 # node name
     tag:
       ids:    [0, 4]         # tag IDs for which to publish transform
       frames: [table_tag, camera_que_tag]   # frame names
-      sizes:  [0.120, 0.023]     # tag-specific edge size, overrides the default 'size'
+      sizes:  [0.065, 0.012]     # tag-specific edge size, overrides the default 'size'
 
