@@ -7,17 +7,23 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
+        (
+            'share/ament_index/resource_index/packages',
+            ['resource/' + package_name],
+        ),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', [
-            'launch/image.launch.xml',
-            'launch/rs_launch.py'
-            ]),  
-        ('share/' + package_name + '/config', [
-            'config/default.rviz',
-            'config/tags.yaml'
-            ]),         
+        (
+            'share/' + package_name + '/launch',
+            [
+                'launch/image.launch.xml',
+                'launch/control.launch.xml',
+                'launch/rs_launch.py',
+            ],
+        ),
+        (
+            'share/' + package_name + '/config',
+            ['config/default.rviz', 'config/tags.yaml'],
+        ),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -30,6 +36,7 @@ setup(
         'console_scripts': [
             'bridger = poolinator.bridger:main',
             'bridger2 = poolinator.bridger2:main',
+            'control = poolinator.control:main',
         ],
     },
 )

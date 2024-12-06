@@ -9,7 +9,7 @@ from apriltag import apriltag
 
 from tf2_ros import TransformBroadcaster
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Quaternion
 from tf2_geometry_msgs import do_transform_pose
 
 from tf2_ros import TransformException
@@ -34,11 +34,11 @@ def quaternion_from_euler(ai, aj, ak):
     sc = si * ck
     ss = si * sk
 
-    q = np.empty((4,))
-    q[0] = cj * sc - sj * cs
-    q[1] = cj * ss + sj * cc
-    q[2] = cj * cs - sj * sc
-    q[3] = cj * cc + sj * ss
+    q = Quaternion()
+    q.x = cj * sc - sj * cs
+    q.y = cj * ss + sj * cc
+    q.z = cj * cs - sj * sc
+    q.w = cj * cc + sj * ss
 
     return q
 
@@ -78,10 +78,7 @@ class transformNode(Node):
                 t.transform.translation.z = -0.018
 
                 q = quaternion_from_euler(np.pi, 0, 0)
-                t.transform.rotation.x = q[0]
-                t.transform.rotation.y = q[1]
-                t.transform.rotation.z = q[2]
-                t.transform.rotation.w = q[3]
+                t.transform.rotation = q
 
                 self.static_broadcaster.sendTransform(t)
                 self.get_logger().info(
@@ -94,7 +91,7 @@ class transformNode(Node):
     def lookup_cuetag_to_camera(self):
         # Store frame names in variables that will be used to
         # compute transformations
-        from_frame_cam = 'tagStandard41h12:4'
+        from_frame_cam = 'camera_que_tag'
         to_frame_cam = 'camera_link'
 
         from_frame_que = 'base'
@@ -123,9 +120,6 @@ class transformNode(Node):
 
             self.cuetag_to_camera_pose.orientation = tcam.transform.rotation
 
-            self.get_logger().info(f"{tcam.transform}")
-            self.get_logger().info(f"{tque.transform}")
-
             # Combine transforms
             cameraInBase = do_transform_pose(self.cuetag_to_camera_pose, tque)
 
@@ -143,6 +137,7 @@ class transformNode(Node):
 
             # Publish camera in base frame
             self.static_broadcaster.sendTransform(t)
+            self.hasCameraPosition = True
             return
         except TransformException as ex:
             self.get_logger().info(
