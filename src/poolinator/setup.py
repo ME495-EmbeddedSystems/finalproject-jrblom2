@@ -35,7 +35,7 @@ setup(
     entry_points={
         'console_scripts': [
             'bridger = poolinator.bridger:main',
-            'bridger2 = poolinator.bridger2:main',
+            'img_proc = poolinator.img_proc:main',
             'control = poolinator.control:main',
         ],
     },
