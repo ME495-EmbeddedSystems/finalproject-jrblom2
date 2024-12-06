@@ -10,35 +10,20 @@ class ImageProcessorColors(Node):
     def __init__(self):
         super().__init__('image_processor_colors')
         self.bridge = CvBridge()
-        self.create_subscription(Image, 'image', self.opencv_process, 10)
+        self.create_subscription(Image, 'rgb_image', self.rgb_process, 10)
+        # self.create_subscription(Image, 'depth_image', self.depth_process, 10)
         self.pub = self.create_publisher(Image, 'new_image', 10)
 
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-
-        # # Subscribing to the RGB and Depth image topics
-        # self.rgb_subscription = self.create_subscription(
-        #     Image,
-        #     '/camera/color/image_raw',  # RGB topic
-        #     self.process_rgb_image,
-        #     10
-        # )
-        # self.depth_subscription = self.create_subscription(
-        #     Image,
-        #     '/camera/depth/image_rect_raw',  # Depth topic
-        #     self.process_depth_image,
-        #     10
-        # )
-
-        # # Placeholder for depth image
+        # Placeholder for depth image
         # self.depth_image = None
+        self.cx = None
+        self.cy = None
+        self.depth_value = None
 
-        self.get_logger().info("Subscriptions created for RGB and Depth image topics.")
-
-
-    def opencv_process(self, image):
-        """Draw a circle on the subscribed image and republish it to new_image."""
+    def rgb_process(self, image):
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
         hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
         lower_red1 = np.array([0, 100, 100])
@@ -47,82 +32,86 @@ class ImageProcessorColors(Node):
         upper_red2 = np.array([180, 255, 255])
         mask1 = cv2.inRange(hsv_image, lower_red1, upper_red1)
         mask2 = cv2.inRange(hsv_image, lower_red2, upper_red2)
-        red_mask = cv2.bitwise_or(mask1, mask2)
-        res = cv2.bitwise_and(hsv_image,hsv_image,mask = red_mask)
-        new_msg = self.bridge.cv2_to_imgmsg(res, encoding='bgr8')
+        red_ball_mask = cv2.bitwise_or(mask1, mask2)
+        red_ball = cv2.bitwise_and(hsv_image,hsv_image,mask = red_ball_mask)
+        new_msg = self.bridge.cv2_to_imgmsg(red_ball, encoding='bgr8')
+
+        # Find the center of mass (centroid) of the red ball
+        cx, cy = self.find_center_of_mass(red_ball_mask)
+
+        # Check if any red pixels detected
+        if cx is None or cy is None:
+            self.get_logger().info('No ball detected')
+        else:
+            self.get_logger().info(f'Ball at {cx}, {cy}')
+            self.cx = cx
+            self.cy = cy
+        
+        if cx and cy and self.depth_value:
+            x, y, z = self.pixel_to_world(cx, cv, self.depth_value)
+            self.get_logger().info(f'Ball in world at {x}, {y}, {z}')
+
         self.pub.publish(new_msg)
 
-    def timer_callback(self):
-        self.get_logger().info('IN TIMERRRR')
+    # def depth_process(self, image):
+    #     """
+    #     Callback to process the depth image.
+    #     """
+    #     depth_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='16UC1')
+    #     if self.cx and self.cy:
+    #         cx = self.cx
+    #         cy = self.cy
+    #         self.depth_value = depth_image[cy,cx]
+    #     # new_msg = self.bridge.cv2_to_imgmsg(depth_image, encoding='16UC1')
+    #     # self.pub.publish(new_msg)
+
+
+    def find_center_of_mass(self, mask):
+        # Find contours in the mask
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if contours:
+            # Get the largest contour by area
+            largest_contour = max(contours, key=cv2.contourArea)
+            
+            # Calculate the moments of the largest contour
+            M = cv2.moments(largest_contour)
+
+            # Ensure the moment is not zero (to avoid division by zero)
+            if M["m00"] != 0:
+                # Calculate the center of mass (cx, cy)
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                return cx, cy
+        return None, None # if no red ball is found 
     
-    # def process_rgb_image(self, msg):
-    #     try:
-    #         # Convert ROS2 Image message to OpenCV image
-    #         cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+    def pixel_to_world(self, u, v, depth_value):
+        """
+        Convert pixel coordinates (u, v) and depth to world coordinates.
+        Parameters:
+            u (int): Pixel x-coordinate.
+            v (int): Pixel y-coordinate.
+            depth_value (float): Depth value at (u, v).
+        Returns:
+            tuple: (x, y, z) world coordinates in meters.
+        """
+        intrinsics = self.profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
+        fx = intrinsics.fx
+        fy = intrinsics.fy
+        cx = intrinsics.ppx
+        cy = intrinsics.ppy
 
-    #         # Convert to HSV and apply a mask for red color
-    #         hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-    #         lower_red1 = np.array([0, 100, 100])
-    #         upper_red1 = np.array([10, 255, 255])
-    #         lower_red2 = np.array([160, 100, 100])
-    #         upper_red2 = np.array([180, 255, 255])
-    #         mask1 = cv2.inRange(hsv_image, lower_red1, upper_red1)
-    #         mask2 = cv2.inRange(hsv_image, lower_red2, upper_red2)
-    #         red_mask = cv2.bitwise_or(mask1, mask2)
+        # Convert pixel (u, v) and depth to world coordinates
+        z = depth_value * self.depth_scale  # Convert depth to meters
+        x = (u - cx) * z / fx
+        y = (v - cy) * z / fy
 
-    #         # Find contours
-    #         contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #         if contours:
-    #             # Find the largest contour
-    #             largest_contour = max(contours, key=cv2.contourArea)
-    #             # Get the center of mass
-    #             M = cv2.moments(largest_contour)
-    #             if M["m00"] > 0:
-    #                 cx = int(M["m10"] / M["m00"])
-    #                 cy = int(M["m01"] / M["m00"])
-    #                 # Draw a circle at the center
-    #                 cv2.circle(cv_image, (cx, cy), 5, (0, 255, 0), -1)
-    #                 # Print the x, y, z distance
-    #                 z_distance = self.get_depth_at_pixel(cx, cy)
-    #                 self.get_logger().info(f"Red Ball Position: x={cx}, y={cy}, z={z_distance:.2f}m")
+        return x, y, z
 
-    #         # Display the image
-    #         cv2.imshow("RGB Image", cv_image)
-    #         cv2.waitKey(1)
-    #         self.get_logger().info("Processing RGB image.")
-    #     except Exception as e:
-    #         self.get_logger().error(f"Error processing RGB image: {e}")
 
-    # def process_depth_image(self, msg):
-    #     try:
-    #         # Convert ROS2 Image message to OpenCV image
-    #         self.depth_image = self.bridge.imgmsg_to_cv2(msg, "16UC1")
-    #     except Exception as e:
-    #         self.get_logger().error(f"Error processing Depth image: {e}")
-
-    # def get_depth_at_pixel(self, x, y):
-    #     """Get the depth value at a specific pixel (x, y)."""
-    #     if self.depth_image is not None:
-    #         depth_value = self.depth_image[y, x]  # Depth value in millimeters
-    #         return depth_value / 1000.0  # Convert to meters
-    #     return float('nan')  # Return NaN if depth image is not available
-
-# def main(args=None):
-#     rclpy.init(args=args)
-#     node = ImageProcessorColors()
-#     try:
-#         rclpy.spin(node)
-#     except KeyboardInterrupt:
-#         node.get_logger().info('Node stopped cleanly')
-#     except Exception as e:
-#         node.get_logger().error(f"Error in the node: {e}")
-#     finally:
-#         cv2.destroyAllWindows()
-#         node.destroy_node()
-#         rclpy.shutdown()
-
-# if __name__ == '__main__':
-#     main()
+    def timer_callback(self):
+        # self.get_logger().info('IN TIMERRRR')
+        pass
 
 def main():
     rclpy.init()

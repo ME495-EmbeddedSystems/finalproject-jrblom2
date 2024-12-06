@@ -18,7 +18,8 @@
     </node> -->
 
     <node pkg='poolinator' exec='colorsNode' name='colorsNode' output='screen'>
-         <remap from='image' to='/camera/camera/color/image_raw' />
+        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
+        <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
     </node>
 
 </launch>
