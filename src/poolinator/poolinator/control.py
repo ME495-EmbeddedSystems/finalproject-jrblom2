@@ -16,6 +16,7 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 
 import numpy as np
 
+from poolinator.poolAlgorithm import *
 
 class State(Enum):
     """Keep track of the robots current command."""
@@ -47,14 +48,22 @@ class ControlNode(Node):
             Empty, 'center_strike', self.center_strike_callback
         )
 
+        self.strike_redball = self.create_service(
+            Empty, 'strike_redball', self.strike_redball_callback
+        )
+
         self.mp_interface = MotionPlanningInterface(self)
         self.world = World(
             self,
             'table_tag',
-            ['b1'],
+            ['red_ball'],
         )
 
         self.state = State.SETUP
+
+        self.ballDict = None
+        self.pockets = None
+        self.pool_algo = None
 
     def timer_callback(self):
         # Stay in setup state until pool table frames exist from CV
@@ -67,6 +76,35 @@ class ControlNode(Node):
 
         if self.state == State.RUNNING:
             pass
+
+        self.get_logger().info(f'self.world.ballPositions: {self.world.ballPositions()}')
+        self.ballDict = self.world.ballPositions()
+        self.pockets = self.world.pocketPositions()
+        self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
+
+    async def strike_redball_callback(self, request, response):
+        pocket_pos = self.world.pocketPositions()
+        eePose = self.pool_algo.test_strike_pose(pocket_pos[5])
+        
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
+        self.logger.info('Move Done')
+        return response
+
+        # possible, ee, strike_ang = self.pool_algo.calc_cue_pos(self.ballDict['red_ball'], )
+        
+        # if possible:
+        #     eePose = Pose()
+        #     eePose.position = ee
+        #     eeOrientation = quaternion_from_euler(strike_ang, 0, 0)
+        #     eePose.orientation = eeOrientation
+        #     resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        #     await resultFuture
+        #     self.logger.info('Move Done')
+        #     return response
+        # else:
+        #     self.logger.info('Move not possible')
+
 
     async def move_c1_callback(self, request, response):
         pocket_pos = self.world.pocketPositions()

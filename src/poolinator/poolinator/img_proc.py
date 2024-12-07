@@ -238,7 +238,7 @@ class ImageProcessNode(Node):
                                     "z": coords[2]
                                 }
                                 # self.get_logger().info(f"Circle {idx}: {self.circle_positions[idx]}")
-            self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
+            # self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
 
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
         self.pub_circles.publish(new_msg)
