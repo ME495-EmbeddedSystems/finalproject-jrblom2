@@ -171,22 +171,17 @@ class ImageProcessNode(Node):
 
     def detect_table(self, image):
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
         # isolate green surface
         lower_green = np.array([35, 50, 50])
         upper_green = np.array([85, 255, 255])
         green_mask = cv.inRange(hsv_image, lower_green, upper_green)
-        
         green_table = cv.bitwise_and(hsv_image, hsv_image, mask = green_mask)
-
         new_msg = self.bridge.cv2_to_imgmsg(green_table, encoding='bgr8')
         self.pub_table.publish(new_msg)         
 
     def detect_circles(self, image):
         self.get_logger().info('in detect_circles')
-
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-
         # Blur using 3 * 3 kernel. 
         gray_blurred = cv.blur(gray, (3, 3)) 
         
@@ -196,8 +191,8 @@ class ImageProcessNode(Node):
                             dp=1.1,
                             minDist=15,
                             param1=150,
-                            param2=12,  # Adjust between 15-30 based on detection results
-                            minRadius=5,
+                            param2=10,  # Adjust between 15-30 based on detection results
+                            minRadius=7,
                             maxRadius=9
                         )
 
