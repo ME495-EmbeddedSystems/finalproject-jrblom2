@@ -94,6 +94,8 @@ class ImageProcessNode(Node):
         self.ball_y = None
         self.ball_z = None
 
+        self.ball_list = None
+
         self.tf_broadcaster = TransformBroadcaster(self)
 
     def broadcast_camera_to_redball(self):
@@ -210,10 +212,13 @@ class ImageProcessNode(Node):
                 maxRadius=12
             )
 
+            # Initialize the circle_positions dictionary
+            self.circle_positions = {}
+
             # Filter circles within the bounding rectangle
             if circles is not None:
                 circles = np.uint16(np.around(circles))
-                for pt in circles[0, :]:
+                for idx, pt in enumerate(circles[0, :]):
                     a, b, r = pt[0], pt[1], pt[2]
                     
                     # Check if the circle's center is within the bounding rectangle
@@ -221,9 +226,23 @@ class ImageProcessNode(Node):
                         cv.circle(image, (a, b), r, (0, 255, 0), 2)
                         cv.circle(image, (a, b), 1, (0, 0, 255), 3)
 
+                        # Get depth value at the circle center
+                        if self.intrinsics and self.depth_value:
+                            depth_value = self.depth_value
+                            coords = self.pixel_to_world(a, b, depth_value)
+
+                            if coords:
+                                self.circle_positions[idx] = {
+                                    "x": coords[0],
+                                    "y": coords[1],
+                                    "z": coords[2]
+                                }
+                                # self.get_logger().info(f"Circle {idx}: {self.circle_positions[idx]}")
+            self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
+
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
         self.pub_circles.publish(new_msg)
-      
+
         
     def rgb_process(self, image):
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
