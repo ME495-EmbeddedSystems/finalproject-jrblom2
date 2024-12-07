@@ -180,39 +180,50 @@ class ImageProcessNode(Node):
         self.pub_table.publish(new_msg)         
 
     def detect_circles(self, image):
-        self.get_logger().info('in detect_circles')
-        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        # Blur using 3 * 3 kernel. 
-        gray_blurred = cv.blur(gray, (3, 3)) 
-        
-        circles = cv.HoughCircles(
-                            gray_blurred,
-                            cv.HOUGH_GRADIENT,
-                            dp=1.1,
-                            minDist=15,
-                            param1=150,
-                            param2=10,  # Adjust between 15-30 based on detection results
-                            minRadius=7,
-                            maxRadius=9
-                        )
+        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
 
-        # Draw circles that are detected. 
-        if circles is not None: 
-            self.get_logger().info('Circle detected')
-            # Convert the circle parameters a, b and r to integers. 
-            circles = np.uint16(np.around(circles)) 
-        
-            for pt in circles[0, :]: 
-                a, b, r = pt[0], pt[1], pt[2] 
-        
-                # Draw the circumference of the circle. 
-                cv.circle(image, (a, b), r, (0, 255, 0), 2) 
-        
-                # Draw a small circle (of radius 1) to show the center. 
-                cv.circle(image, (a, b), 1, (0, 0, 255), 3)
+        # Isolate green surface
+        lower_green = np.array([35, 50, 50])
+        upper_green = np.array([85, 255, 255])
+        green_mask = cv.inRange(hsv_image, lower_green, upper_green)
+
+        # Find the largest green contour
+        contours, _ = cv.findContours(green_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        if contours:
+            largest_contour = max(contours, key=cv.contourArea)
+            
+            # Get the bounding rectangle
+            x_bound, y_bound, w_bound, h_bound = cv.boundingRect(largest_contour)
+            cv.rectangle(image, (x_bound, y_bound), (x_bound + w_bound, w_bound + h_bound), (255, 0, 0), 2)  
+
+            # Detect circles in the original image
+            gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+            gray_blurred = cv.blur(gray, (3, 3))
+            circles = cv.HoughCircles(
+                gray_blurred,
+                cv.HOUGH_GRADIENT,
+                dp=1.1,
+                minDist=15,
+                param1=120,
+                param2=15,
+                minRadius=10,
+                maxRadius=12
+            )
+
+            # Filter circles within the bounding rectangle
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                for pt in circles[0, :]:
+                    a, b, r = pt[0], pt[1], pt[2]
+                    
+                    # Check if the circle's center is within the bounding rectangle
+                    if x_bound <= a <= x_bound + w_bound and y_bound <= b <= y_bound + h_bound:
+                        cv.circle(image, (a, b), r, (0, 255, 0), 2)
+                        cv.circle(image, (a, b), 1, (0, 0, 255), 3)
 
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
-        self.pub_circles.publish(new_msg)         
+        self.pub_circles.publish(new_msg)
+      
         
     def rgb_process(self, image):
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
