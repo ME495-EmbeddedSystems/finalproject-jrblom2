@@ -71,6 +71,7 @@ class ImageProcessNode(Node):
 
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
         self.pub_circles = self.create_publisher(msg_Image, 'circles', 10)
+        self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -168,6 +169,19 @@ class ImageProcessNode(Node):
             print(e)
             return
 
+    def detect_table(self, image):
+        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+
+        # isolate green surface
+        lower_green = np.array([35, 50, 50])
+        upper_green = np.array([85, 255, 255])
+        green_mask = cv.inRange(hsv_image, lower_green, upper_green)
+        
+        green_table = cv.bitwise_and(hsv_image, hsv_image, mask = green_mask)
+
+        new_msg = self.bridge.cv2_to_imgmsg(green_table, encoding='bgr8')
+        self.pub_table.publish(new_msg)         
+
     def detect_circles(self, image):
         self.get_logger().info('in detect_circles')
 
@@ -182,7 +196,7 @@ class ImageProcessNode(Node):
                             dp=1.1,
                             minDist=15,
                             param1=150,
-                            param2=30,  # Adjust between 15-30 based on detection results
+                            param2=12,  # Adjust between 15-30 based on detection results
                             minRadius=5,
                             maxRadius=9
                         )
@@ -205,14 +219,15 @@ class ImageProcessNode(Node):
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
         self.pub_circles.publish(new_msg)         
         
-
     def rgb_process(self, image):
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
         self.rgb_image_height, self.rgb_image_width, _ = cv_image.shape
 
+        self.detect_table(cv_image)
         self.detect_circles(cv_image)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
+        
         lower_red1 = np.array([0, 100, 100])
         upper_red1 = np.array([10, 255, 255])
         lower_red2 = np.array([160, 100, 100])
@@ -220,7 +235,7 @@ class ImageProcessNode(Node):
         mask1 = cv.inRange(hsv_image, lower_red1, upper_red1)
         mask2 = cv.inRange(hsv_image, lower_red2, upper_red2)
         red_ball_mask = cv.bitwise_or(mask1, mask2)
-        red_ball = cv.bitwise_and(hsv_image,hsv_image,mask = red_ball_mask)
+        red_ball = cv.bitwise_and(hsv_image, hsv_image, mask = red_ball_mask)
         new_msg = self.bridge.cv2_to_imgmsg(red_ball, encoding='bgr8')
 
         # Find the center of mass (centroid) of the red ball
