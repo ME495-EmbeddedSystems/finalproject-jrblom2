@@ -68,7 +68,9 @@ class ImageProcessNode(Node):
         self.bridge = CvBridge()
         self.create_subscription(msg_Image, 'rgb_image', self.rgb_process, 10)
         self.create_subscription(msg_Image, 'depth_image', self.depth_process, 10)
-        self.pub = self.create_publisher(msg_Image, 'new_image', 10)
+
+        self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
+        self.pub_circles = self.create_publisher(msg_Image, 'circles', 10)
 
         timer_period = 0.05 #secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -166,9 +168,49 @@ class ImageProcessNode(Node):
             print(e)
             return
 
+    def detect_circles(self, image):
+        self.get_logger().info('in detect_circles')
+
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+
+        # Blur using 3 * 3 kernel. 
+        gray_blurred = cv.blur(gray, (3, 3)) 
+        
+        circles = cv.HoughCircles(
+                            gray_blurred,
+                            cv.HOUGH_GRADIENT,
+                            dp=1.1,
+                            minDist=15,
+                            param1=150,
+                            param2=30,  # Adjust between 15-30 based on detection results
+                            minRadius=5,
+                            maxRadius=9
+                        )
+
+        # Draw circles that are detected. 
+        if circles is not None: 
+            self.get_logger().info('Circle detected')
+            # Convert the circle parameters a, b and r to integers. 
+            circles = np.uint16(np.around(circles)) 
+        
+            for pt in circles[0, :]: 
+                a, b, r = pt[0], pt[1], pt[2] 
+        
+                # Draw the circumference of the circle. 
+                cv.circle(image, (a, b), r, (0, 255, 0), 2) 
+        
+                # Draw a small circle (of radius 1) to show the center. 
+                cv.circle(image, (a, b), 1, (0, 0, 255), 3)
+
+        new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
+        self.pub_circles.publish(new_msg)         
+        
+
     def rgb_process(self, image):
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
         self.rgb_image_height, self.rgb_image_width, _ = cv_image.shape
+
+        self.detect_circles(cv_image)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
         lower_red1 = np.array([0, 100, 100])
@@ -199,7 +241,7 @@ class ImageProcessNode(Node):
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
 
-        self.pub.publish(new_msg)
+        self.pub_redball.publish(new_msg)
 
     def depth_process(self, image):
         """
@@ -228,6 +270,12 @@ class ImageProcessNode(Node):
                 # Calculate the center of mass (cx, cy)
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
+
+                area = cv.contourArea(largest_contour)
+
+                radius = np.sqrt(area / np.pi)
+                # self.get_logger().info(f'radius: {radius}')
+
                 return cx, cy
         return None, None # if no red ball is found 
     

@@ -23,7 +23,7 @@ setup(
         (
             'share/' + package_name + '/config',
             ['config/default.rviz',
-             'config/redball.rviz', 
+             'config/detect_balls.rviz', 
              'config/tags.yaml'],
         ),
     ],
