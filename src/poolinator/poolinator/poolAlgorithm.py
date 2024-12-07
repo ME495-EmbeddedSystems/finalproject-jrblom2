@@ -85,7 +85,7 @@ class PoolAlgorithm:
         self.D_ball = 0.00258  # diameter of pool balls (meters)
         self.D_stick = 0.0037  # diameter of pool stick (meters)
         self.d = 0.175 # distance from target shot and end-effector frame (meters)
-        
+
         self.cue_ball_pos = None
         for key, value in balls.items():
             if key == 'red_ball': self.cue_ball_pos = value  # allow easy access to cue ball pos
@@ -245,19 +245,26 @@ class PoolAlgorithm:
         """
 
         # Calculate striking angle
-        strike_ang = calc_ang(self.cue_ball_pos, impact)
+        strike_ang = calc_ang(self.cue_ball_pos, impact)    
         ee = Point()
-        ee.x = self.cue_ball_pos.x - self.d*math.cos(strike_ang)
-        ee.y = self.cue_ball_pos.y - self.d*math.sin(strike_ang)
+        # ee.x = self.cue_ball_pos.x - self.d*math.cos(strike_ang)
+        # ee.y = self.cue_ball_pos.y - self.d*math.sin(strike_ang)
+        ee.x = self.cue_ball_pos.x
+        ee.y = self.cue_ball_pos.y
         ee.z = self.cue_ball_pos.z
-
+        
         eePose = Pose()
         eePose.position = ee
-        eeOrientation = Quaternion()
-        eeOrientation.x = 0
-        eeOrientation.y = 0
-        eeOrientation.z = math.sin(strike_ang/2)
-        eeOrientation.w = math.cos(strike_ang/2)  # Pure rotation about the z axis
+        eeOrientation = Quaternion(
+                x=0.9238795325112867, 
+                y=-0.3826834323650898, 
+                z=-2.3432602026631493e-17, 
+                w=5.657130561438501e-17)
+        # eeOrientation = Quaternion()
+        # eeOrientation.x = 0.0
+        # eeOrientation.y = 0.0
+        # eeOrientation.z = math.sin(strike_ang/2)
+        # eeOrientation.w = math.cos(strike_ang/2)  # Pure rotation about the z axis
         eePose.orientation = eeOrientation
         return eePose
 

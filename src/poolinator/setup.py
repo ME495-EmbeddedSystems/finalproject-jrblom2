@@ -24,7 +24,9 @@ setup(
             'share/' + package_name + '/config',
             ['config/default.rviz',
              'config/detect_balls.rviz', 
-             'config/tags.yaml'],
+             'config/yolo.rviz', 
+             'config/tags.yaml',
+             ],
         ),
     ],
     install_requires=['setuptools'],
@@ -39,6 +41,7 @@ setup(
             'bridger = poolinator.bridger:main',
             'img_proc = poolinator.img_proc:main',
             'control = poolinator.control:main',
+            'yolo = poolinator.yolo:main'
         ],
     },
 )

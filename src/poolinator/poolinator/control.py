@@ -84,26 +84,21 @@ class ControlNode(Node):
 
     async def strike_redball_callback(self, request, response):
         pocket_pos = self.world.pocketPositions()
-        eePose = self.pool_algo.test_strike_pose(pocket_pos[5])
-        
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        self.logger.info('Move Done')
-        return response
+        if pocket_pos:
+            c5 = pocket_pos[4]
+            pocket_z = c5.z
+            self.get_logger().info(f'pocket_z: {pocket_z}')
 
-        # possible, ee, strike_ang = self.pool_algo.calc_cue_pos(self.ballDict['red_ball'], )
-        
-        # if possible:
-        #     eePose = Pose()
-        #     eePose.position = ee
-        #     eeOrientation = quaternion_from_euler(strike_ang, 0, 0)
-        #     eePose.orientation = eeOrientation
-        #     resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        #     await resultFuture
-        #     self.logger.info('Move Done')
-        #     return response
-        # else:
-        #     self.logger.info('Move not possible')
+            if self.pool_algo:
+                eePose = self.pool_algo.test_strike_pose(pocket_pos[4])
+                self.get_logger().info(f'eePose: {eePose}')
+
+                resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+                await resultFuture
+                self.logger.info('Move Done')
+                return response
+
+        return response
 
 
     async def move_c1_callback(self, request, response):
@@ -180,6 +175,9 @@ class ControlNode(Node):
         eePose.position = eePosition
         eeOrientation = quaternion_from_euler(np.pi, 0, -np.pi / 4)
         eePose.orientation = eeOrientation
+
+        self.get_logger().info(f'eePose center strike: {eePose}')
+
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         eePose.position.z -= 0.11

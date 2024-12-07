@@ -111,7 +111,7 @@ class ImageProcessNode(Node):
             t.transform.translation.y = -self.ball_y
             t.transform.translation.z = self.ball_z
 
-            q = quaternion_from_euler(0, 0, 0)
+            q = quaternion_from_euler(np.pi, 0, 0)
             t.transform.rotation.x = q[0]
             t.transform.rotation.y = q[1]
             t.transform.rotation.z = q[2]
@@ -281,6 +281,10 @@ class ImageProcessNode(Node):
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
 
+                # self.get_logger().info(f'x: {self.ball_x }')
+                # self.get_logger().info(f'y: {self.ball_y }')
+                # self.get_logger().info(f'z: {self.ball_z }')
+            
         self.pub_redball.publish(new_msg)
 
     def depth_process(self, image):

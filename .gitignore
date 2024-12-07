@@ -6,3 +6,6 @@ __pycache__/
 src/realsense2_camera*
 src/apriltag_ros/
 src/me495_cvbridge/
+yolo11n-seg.pt
+yolo11n.pt
+
