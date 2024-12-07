@@ -113,9 +113,9 @@ class ImageProcessNode(Node):
             t.transform.rotation.w = q[3]
 
             self.tf_broadcaster.sendTransform(t)
-            self.get_logger().info(
-                f"Published transform from {t.header.frame_id} to {t.child_frame_id}"
-            )
+            # self.get_logger().info(
+            #     f"Published transform from {t.header.frame_id} to {t.child_frame_id}"
+            # )
             return
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
