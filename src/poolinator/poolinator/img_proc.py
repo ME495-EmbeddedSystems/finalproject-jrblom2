@@ -94,7 +94,7 @@ class ImageProcessNode(Node):
         self.ball_y = None
         self.ball_z = None
 
-        self.ball_list = None
+        self.circle_positions = None
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -111,7 +111,7 @@ class ImageProcessNode(Node):
             t.transform.translation.y = -self.ball_y
             t.transform.translation.z = self.ball_z
 
-            q = quaternion_from_euler(np.pi, 0, 0)
+            q = quaternion_from_euler(0, 0, 0)
             t.transform.rotation.x = q[0]
             t.transform.rotation.y = q[1]
             t.transform.rotation.z = q[2]
@@ -122,6 +122,39 @@ class ImageProcessNode(Node):
             #     f"Published transform from {t.header.frame_id} to {t.child_frame_id}"
             # )
             return
+        except Exception as e:
+            self.get_logger().error(f"Failed to publish transform: {e}")
+
+    def broadcast_camera_to_balls(self):
+        try:
+            if not self.circle_positions:
+                self.get_logger().info("No balls detected.")
+                return
+
+            for key, value in self.circle_positions.items():
+                # self.get_logger().info(f"key: {key}")
+                # self.get_logger().info(f"{key} x: {value['x']}")
+                # self.get_logger().info(f"{key} y: {value['y']}")
+                # self.get_logger().info(f"{key} z: {value['z']}")
+
+                t = TransformStamped()
+
+                t.header.stamp = self.get_clock().now().to_msg()
+                t.header.frame_id = 'camera_color_optical_frame'
+                t.child_frame_id = key
+
+                t.transform.translation.x = value['x']
+                t.transform.translation.y = -value['y']
+                t.transform.translation.z = value['z']
+
+                q = quaternion_from_euler(0, 0, 0)
+                t.transform.rotation.x = q[0]
+                t.transform.rotation.y = q[1]
+                t.transform.rotation.z = q[2]
+                t.transform.rotation.w = q[3]
+
+                self.tf_broadcaster.sendTransform(t)
+
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
@@ -193,7 +226,7 @@ class ImageProcessNode(Node):
         contours, _ = cv.findContours(green_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         if contours:
             largest_contour = max(contours, key=cv.contourArea)
-            
+
             # Get the bounding rectangle
             x_bound, y_bound, w_bound, h_bound = cv.boundingRect(largest_contour)
             cv.rectangle(image, (x_bound, y_bound), (x_bound + w_bound, w_bound + h_bound), (255, 0, 0), 2)  
@@ -201,15 +234,18 @@ class ImageProcessNode(Node):
             # Detect circles in the original image
             gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
             gray_blurred = cv.blur(gray, (3, 3))
+
+            minradius_in_px = 10
+            maxradius_in_px = 12
             circles = cv.HoughCircles(
                 gray_blurred,
                 cv.HOUGH_GRADIENT,
                 dp=1.1,
-                minDist=15,
+                minDist=minradius_in_px/2,
                 param1=120,
                 param2=15,
-                minRadius=10,
-                maxRadius=12
+                minRadius=minradius_in_px,
+                maxRadius=maxradius_in_px
             )
 
             # Initialize the circle_positions dictionary
@@ -232,13 +268,14 @@ class ImageProcessNode(Node):
                             coords = self.pixel_to_world(a, b, depth_value)
 
                             if coords:
-                                self.circle_positions[idx] = {
-                                    "x": coords[0],
-                                    "y": coords[1],
-                                    "z": coords[2]
+                                ball_name = 'ball' + str(idx)
+                                self.circle_positions[ball_name] = {
+                                    'x': coords[0],
+                                    'y': coords[1],
+                                    'z': coords[2]
                                 }
                                 # self.get_logger().info(f"Circle {idx}: {self.circle_positions[idx]}")
-            # self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
+            self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
 
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
         self.pub_circles.publish(new_msg)
@@ -280,10 +317,6 @@ class ImageProcessNode(Node):
                 self.ball_x = coords[0]
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
-
-                # self.get_logger().info(f'x: {self.ball_x }')
-                # self.get_logger().info(f'y: {self.ball_y }')
-                # self.get_logger().info(f'z: {self.ball_z }')
             
         self.pub_redball.publish(new_msg)
 
@@ -349,6 +382,9 @@ class ImageProcessNode(Node):
 
     def timer_callback(self):
         self.broadcast_camera_to_redball()
+        self.broadcast_camera_to_balls()
+        # if self.circle_positions:
+        #     self.get_logger().info(f'balls: {self.circle_positions['ball0']['x']}')
         # pass
 
     def destroy_node(self):

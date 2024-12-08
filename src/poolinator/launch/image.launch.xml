@@ -1,6 +1,6 @@
 <launch>
-    <!-- <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/detect_balls.rviz' description="Rviz configuration file."/> -->
-    <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/yolo.rviz' description="Rviz configuration file."/>
+    <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/detect_balls.rviz' description="Rviz configuration file."/>
+    <!-- <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/yolo.rviz' description="Rviz configuration file."/> -->
     
     <include file='$(find-pkg-share poolinator)/launch/rs_launch.py' >
     </include>
@@ -15,14 +15,14 @@
         <remap from='image_rect' to='/camera/camera/color/image_raw'/>
         <remap from='camera_info' to='/camera/camera_info'/>
     </node>
-<!-- 
+
     <node pkg='poolinator' exec='img_proc' name='img_proc' output='screen'>
         <remap from='rgb_image' to='/camera/camera/color/image_raw' />
         <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
-    </node> -->
-
-    <node pkg='poolinator' exec='yolo' name='yolo' output='screen'>
-        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
     </node>
+
+    <!-- <node pkg='poolinator' exec='yolo' name='yolo' output='screen'>
+        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
+    </node> -->
 
 </launch>
