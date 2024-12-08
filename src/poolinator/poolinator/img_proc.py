@@ -341,14 +341,12 @@ class ImageProcessNode(Node):
         if cx and cy and self.depth_value:
             coords = self.pixel_to_world(cx, cy, self.depth_value)
             if coords:
-                self.ball_x = coords[0]-0.41
-                self.ball_y = coords[1]-0.41
+                self.ball_x = coords[0]
+                self.ball_y = coords[1]
                 self.ball_z = coords[2]
                 # self.get_logger().info(f'Ball at x: {self.ball_x}')
                 # self.get_logger().info(f'Ball at y: {self.ball_y}')
                 # self.get_logger().info(f'Ball at z: {self.ball_z}')
-
-
             
         self.pub_redball.publish(new_msg)
 

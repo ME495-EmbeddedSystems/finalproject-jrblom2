@@ -22,5 +22,6 @@ apriltag:                 # node name
       ids:    [0, 4]         # tag IDs for which to publish transform
       frames: [table_tag, camera_que_tag]   # frame names
       # sizes:  [0.067, 0.012]     # tag-specific edge size, overrides the default 'size'
-      sizes:  [0.0635, 0.0105]     # tag-specific edge size, overrides the default 'size'
+      # sizes:  [0.0635, 0.0105]     # tag-specific edge size, overrides the default 'size'
+      sizes:  [0.12, 0.025]     # tag-specific edge size, overrides the default 'size'
 
