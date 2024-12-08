@@ -132,11 +132,6 @@ class ImageProcessNode(Node):
                 return
 
             for key, value in self.circle_positions.items():
-                # self.get_logger().info(f"key: {key}")
-                # self.get_logger().info(f"{key} x: {value['x']}")
-                # self.get_logger().info(f"{key} y: {value['y']}")
-                # self.get_logger().info(f"{key} z: {value['z']}")
-
                 t = TransformStamped()
 
                 t.header.stamp = self.get_clock().now().to_msg()
@@ -383,8 +378,6 @@ class ImageProcessNode(Node):
     def timer_callback(self):
         self.broadcast_camera_to_redball()
         self.broadcast_camera_to_balls()
-        # if self.circle_positions:
-        #     self.get_logger().info(f'balls: {self.circle_positions['ball0']['x']}')
         # pass
 
     def destroy_node(self):
