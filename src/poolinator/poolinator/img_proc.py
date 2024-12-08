@@ -109,9 +109,9 @@ class ImageProcessNode(Node):
             t.header.frame_id = 'camera_color_optical_frame'
             t.child_frame_id = 'red_ball'
 
-            t.transform.translation.x = self.ball_x
-            t.transform.translation.y = self.ball_y
-            t.transform.translation.z = self.ball_z
+            t.transform.translation.x = float(self.ball_x)
+            t.transform.translation.y = float(self.ball_y)
+            t.transform.translation.z = float(self.ball_z)
 
             q = quaternion_from_euler(0, 0, 0)
             t.transform.rotation.x = q[0]
@@ -142,9 +142,9 @@ class ImageProcessNode(Node):
                 t.header.frame_id = 'camera_color_optical_frame'
                 t.child_frame_id = key
 
-                t.transform.translation.x = value['x']
-                t.transform.translation.y = -value['y']
-                t.transform.translation.z = value['z']
+                t.transform.translation.x = float(value['x'])
+                t.transform.translation.y = float(value['y'])
+                t.transform.translation.z = float(value['z'])
 
                 q = quaternion_from_euler(0, 0, 0)
                 t.transform.rotation.x = q[0]
