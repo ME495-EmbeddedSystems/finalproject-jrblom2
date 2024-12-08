@@ -51,7 +51,7 @@ class World:
         self.tableWidth = 0.31
         self.tableLength = 0.51
         self.tableHeight = 0.09
-        self.tableTagSize = 0.14
+        self.tableTagSize = 0.135
 
         self.lastPockets = []
 

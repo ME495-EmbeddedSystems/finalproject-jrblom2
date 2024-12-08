@@ -14,6 +14,7 @@ Working functions (I think):
 """
 import math
 from geometry_msgs.msg import Point, Pose, Quaternion, Vector3
+from poolinator.img_proc import quaternion_from_euler
 
 def calc_ang(ball_1, ball_2):
     """
@@ -251,16 +252,12 @@ class PoolAlgorithm:
         # ee.y = self.cue_ball_pos.y - self.d*math.sin(strike_ang)
         ee.x = self.cue_ball_pos.x
         ee.y = self.cue_ball_pos.y
-        ee.z = self.cue_ball_pos.z
+        ee.z = self.cue_ball_pos.z + 0.1
         
+        q = quaternion_from_euler(0.0, 0.0, float(strike_ang))
         eePose = Pose()
         eePose.position = ee
-        eeOrientation = Quaternion(
-                x=0.9238795325112867, 
-                y=-0.3826834323650898, 
-                z=-2.3432602026631493e-17, 
-                w=5.657130561438501e-17)
-        # eeOrientation = Quaternion()
+        eeOrientation = q
         # eeOrientation.x = 0.0
         # eeOrientation.y = 0.0
         # eeOrientation.z = math.sin(strike_ang/2)

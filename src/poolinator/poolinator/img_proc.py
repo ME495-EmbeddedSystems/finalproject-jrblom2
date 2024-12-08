@@ -132,7 +132,7 @@ class ImageProcessNode(Node):
         """
         try:
             if not self.circle_positions:
-                self.get_logger().info("No balls detected.")
+                # self.get_logger().info("No balls detected.")
                 return
 
             for key, value in self.circle_positions.items():
@@ -265,7 +265,7 @@ class ImageProcessNode(Node):
                 dp=1.1,
                 minDist=minradius_in_px/2,
                 param1=120,
-                param2=15,
+                param2=17,
                 minRadius=minradius_in_px,
                 maxRadius=maxradius_in_px
             )
@@ -297,7 +297,7 @@ class ImageProcessNode(Node):
                                     'y': coords[1],
                                     'z': coords[2]
                                 }
-            self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
+            # self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
 
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
         self.pub_circles.publish(new_msg)
