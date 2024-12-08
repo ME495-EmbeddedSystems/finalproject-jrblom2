@@ -1,4 +1,4 @@
 [1] https://www.geeksforgeeks.org/circle-detection-using-opencv-python/. Accessed 06/12/2024.
 [2] https://stackoverflow.com/questions/60637120/detect-circles-in-opencv. Accessed 06/12/2024.
-[3] https://stackoverflow.com/questions/34961349/draw-contours-in-opencv-around-recognized-polygon. Accessed 08/12/2024.
+[3] https://docs.opencv.org/4.x/d7/d1d/tutorial_hull.html. Accessed 08/12/2024.
 [4] https://stackoverflow.com/questions/13786088/determine-if-a-point-is-inside-or-outside-of-a-shape-with-opencv. Accessed 08/12/2024.
