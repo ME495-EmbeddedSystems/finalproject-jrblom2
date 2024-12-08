@@ -79,6 +79,7 @@ class ImageProcessNode(Node):
         self.cx = None
         self.cy = None
         self.depth_value = None
+        self.depth_scale = 0.001
 
         self.rgb_image_height = None
         self.rgb_image_width = None
@@ -89,7 +90,6 @@ class ImageProcessNode(Node):
         self.pix = None
         self.pix_grade = None
 
-        self.depth_scale = 0.001
         self.ball_x = None
         self.ball_y = None
         self.ball_z = None
@@ -287,8 +287,7 @@ class ImageProcessNode(Node):
 
                         # Get depth value at the circle center
                         if self.intrinsics and self.depth_value:
-                            depth_value = self.depth_value
-                            coords = self.pixel_to_world(a, b, depth_value)
+                            coords = self.pixel_to_world(a, b, self.depth_value)
 
                             if coords:
                                 ball_name = 'ball' + str(idx)
@@ -420,11 +419,21 @@ class ImageProcessNode(Node):
 
             return [x, y, z]
         return None
+    
+    # def get_depth_scale(self):
+    #     pipeline = rs2.pipeline()
+    #     profile = pipeline.start()
+    #     depth_sensor = profile.get_device().first_depth_sensor()
+    #     depth_scale = depth_sensor.get_depth_scale()
+    #     pipeline.stop()
+    #     return depth_scale
 
     def timer_callback(self):
         self.broadcast_camera_to_redball()
         self.broadcast_camera_to_otherballs()
-        # pass
+
+        # if self.depth_scale == None:
+        #     self.depth_scale = self.get_depth_scale()
 
     def destroy_node(self):
         self.pipeline.stop()
