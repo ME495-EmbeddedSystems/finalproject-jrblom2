@@ -99,6 +99,8 @@ class ImageProcessNode(Node):
         self.tf_broadcaster = TransformBroadcaster(self)
 
     def broadcast_camera_to_redball(self):
+        """_summary_
+        """
         # Try until publish succeds, cant continue without this
         try:
             t = TransformStamped()
@@ -125,7 +127,9 @@ class ImageProcessNode(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
-    def broadcast_camera_to_balls(self):
+    def broadcast_camera_to_otherballs(self):
+        """_summary_
+        """
         try:
             if not self.circle_positions:
                 self.get_logger().info("No balls detected.")
@@ -154,6 +158,11 @@ class ImageProcessNode(Node):
             self.get_logger().error(f"Failed to publish transform: {e}")
 
     def imageDepthCallback(self, data):
+        """_summary_
+
+        Args:
+            data (_type_): _description_
+        """
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
             # pick one pixel among all the pixels with the closest range:
@@ -179,6 +188,11 @@ class ImageProcessNode(Node):
             return
 
     def imageDepthInfoCallback(self, cameraInfo):
+        """_summary_
+
+        Args:
+            cameraInfo (_type_): _description_
+        """
         try:
             if self.intrinsics:
                 return
@@ -200,6 +214,11 @@ class ImageProcessNode(Node):
             return
 
     def detect_table(self, image):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+        """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
         # isolate green surface
         lower_green = np.array([35, 50, 50])
@@ -210,6 +229,11 @@ class ImageProcessNode(Node):
         self.pub_table.publish(new_msg)         
 
     def detect_circles(self, image):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+        """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
 
         # Isolate green surface
@@ -224,6 +248,10 @@ class ImageProcessNode(Node):
 
             hull = cv.convexHull(largest_contour)
             cv.polylines(image, [hull], isClosed=True, color=(255, 0, 0), thickness=2)
+
+            # # Get the bounding rectangle
+            # x_bound, y_bound, w_bound, h_bound = cv.boundingRect(largest_contour)
+            # cv.rectangle(image, (x_bound, y_bound), (x_bound + w_bound, w_bound + h_bound), (255, 0, 0), 2)  
 
             # Detect circles in the original image
             gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -245,13 +273,14 @@ class ImageProcessNode(Node):
             # Initialize the circle_positions dictionary
             self.circle_positions = {}
 
-            # Filter circles within the bounding polygon
+            # Filter circles within the bounding rectangle
             if circles is not None:
                 circles = np.uint16(np.around(circles))
                 for idx, pt in enumerate(circles[0, :]):
                     a, b, r = pt[0], pt[1], pt[2]
                     
-                    # Check if the circle's center is within the bounding polygon
+                    # Check if the circle's center is within the bounding rectangle
+                    # if x_bound <= a <= x_bound + w_bound and y_bound <= b <= y_bound + h_bound:
                     if cv.pointPolygonTest(hull, (a, b), False) >= 0:
                         cv.circle(image, (a, b), r, (0, 255, 0), 2)
                         cv.circle(image, (a, b), 1, (0, 0, 255), 3)
@@ -268,7 +297,6 @@ class ImageProcessNode(Node):
                                     'y': coords[1],
                                     'z': coords[2]
                                 }
-                                # self.get_logger().info(f"Circle {idx}: {self.circle_positions[idx]}")
             self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
 
         new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
@@ -276,6 +304,11 @@ class ImageProcessNode(Node):
 
         
     def rgb_process(self, image):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+        """
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
         self.rgb_image_height, self.rgb_image_width, _ = cv_image.shape
 
@@ -315,8 +348,11 @@ class ImageProcessNode(Node):
         self.pub_redball.publish(new_msg)
 
     def depth_process(self, image):
-        """
-        Callback to process the depth image.
+        """ Callback to process the depth image.
+
+
+        Args:
+            image (_type_): _description_
         """
         depth_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='16UC1')
         if self.cx and self.cy:
@@ -326,6 +362,14 @@ class ImageProcessNode(Node):
             self.depth_value = depth_image[cy_scaled, cx_scaled]
 
     def find_center_of_mass(self, mask):
+        """_summary_
+
+        Args:
+            mask (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # Find contours in the mask
         contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         
@@ -376,7 +420,7 @@ class ImageProcessNode(Node):
 
     def timer_callback(self):
         self.broadcast_camera_to_redball()
-        self.broadcast_camera_to_balls()
+        self.broadcast_camera_to_otherballs()
         # pass
 
     def destroy_node(self):
