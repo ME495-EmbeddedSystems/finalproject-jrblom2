@@ -110,7 +110,7 @@ class ImageProcessNode(Node):
             t.child_frame_id = 'red_ball'
 
             t.transform.translation.x = self.ball_x
-            t.transform.translation.y = -self.ball_y
+            t.transform.translation.y = self.ball_y
             t.transform.translation.z = self.ball_z
 
             q = quaternion_from_euler(0, 0, 0)
@@ -246,12 +246,12 @@ class ImageProcessNode(Node):
         if contours:
             largest_contour = max(contours, key=cv.contourArea)
 
-            hull = cv.convexHull(largest_contour)
-            cv.polylines(image, [hull], isClosed=True, color=(255, 0, 0), thickness=2)
+            # hull = cv.convexHull(largest_contour)
+            # cv.polylines(image, [hull], isClosed=True, color=(255, 0, 0), thickness=2)
 
             # # Get the bounding rectangle
-            # x_bound, y_bound, w_bound, h_bound = cv.boundingRect(largest_contour)
-            # cv.rectangle(image, (x_bound, y_bound), (x_bound + w_bound, w_bound + h_bound), (255, 0, 0), 2)  
+            x_bound, y_bound, w_bound, h_bound = cv.boundingRect(largest_contour)
+            cv.rectangle(image, (x_bound, y_bound), (x_bound + w_bound, w_bound + h_bound), (255, 0, 0), 2)  
 
             # Detect circles in the original image
             gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -280,8 +280,8 @@ class ImageProcessNode(Node):
                     a, b, r = pt[0], pt[1], pt[2]
                     
                     # Check if the circle's center is within the bounding rectangle
-                    # if x_bound <= a <= x_bound + w_bound and y_bound <= b <= y_bound + h_bound:
-                    if cv.pointPolygonTest(hull, (a, b), False) >= 0:
+                    if x_bound <= a <= x_bound + w_bound and y_bound <= b <= y_bound + h_bound:
+                    # if cv.pointPolygonTest(hull, (a, b), False) >= 0:
                         cv.circle(image, (a, b), r, (0, 255, 0), 2)
                         cv.circle(image, (a, b), 1, (0, 0, 255), 3)
 
