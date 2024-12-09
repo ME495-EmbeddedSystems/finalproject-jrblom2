@@ -131,7 +131,7 @@ class MotionPlanner:
         robotState = await self._IKClient.call_async(poseMessage)
         return robotState.solution
 
-    async def pathPlanJoints(self, goalJoints, startJoints=None):
+    async def pathPlanJoints(self, goalJoints, startJoints=None, max_vel=0.1, max_accel=0.1):
         """Plan a path to a goal set of joints.
 
         If no start joints are passed
@@ -141,6 +141,10 @@ class MotionPlanner:
             goalJoints (dict): Goal configuration.
             startJoints (dict, optional): Starting configuration.
                 Defaults to None.
+            max_vel (float): Max Velocity Scaling Factor.
+                Defaults to 0.1.
+            max_accel (float): Max Acceleration Scaling Factor.
+                Defaults to 0.1.
 
         Returns:
             _type_: _description_
@@ -167,8 +171,8 @@ class MotionPlanner:
         goalConstraints.joint_constraints = goalJointConstraints
 
         goalMessage.goal_constraints = [goalConstraints]
-        goalMessage.max_velocity_scaling_factor = 0.1
-        goalMessage.max_acceleration_scaling_factor = 0.1
+        goalMessage.max_velocity_scaling_factor = max_vel
+        goalMessage.max_acceleration_scaling_factor = max_accel
         goalMessage.allowed_planning_time = 10.0
         goalMessage.num_planning_attempts = 50
         goalRequest = MoveGroup.Goal(request=goalMessage)
@@ -177,7 +181,7 @@ class MotionPlanner:
         resultFuture = response_goal_handle.get_result_async()
         return resultFuture
 
-    async def pathPlanPose(self, goalPose=None, startJoints=None):
+    async def pathPlanPose(self, goalPose=None, startJoints=None, max_vel=0.1, max_accel=0.1):
         """Plan a path to a specified pose (position and orientation)
            from any starting configuration.
 
@@ -186,6 +190,10 @@ class MotionPlanner:
             (rotation and orientation).
             startJoints (dict, optional): Starting configuration.
                 Defaults to None.
+            max_vel (float): Max Velocity Scaling Factor.
+                Defaults to 0.1.
+            max_accel (float): Max Acceleration Scaling Factor.
+                Defaults to 0.1.
 
         Returns:
             _type_: _description_
@@ -200,16 +208,20 @@ class MotionPlanner:
         ):
             goalJoints[name] = position
 
-        resultFuture = await self.pathPlanJoints(goalJoints, startJoints)
+        resultFuture = await self.pathPlanJoints(goalJoints, startJoints, max_vel, max_accel)
         return resultFuture
 
-    async def cartesianPath(self, goalPose, startJoints=None):
+    async def cartesianPath(self, goalPose, startJoints=None, max_vel=0.1, max_accel=0.1):
         """Plan a path to a pose by a cartesian path.
 
         Args:
             goalPose (Pose): Goal configuration as a Pose.
             startJoints (dict, optional): Starting configuration.
                 Defaults to None.
+            max_vel (float): Max Velocity Scaling Factor.
+                Defaults to 0.1.
+            max_accel (float): Max Acceleration Scaling Factor.
+                Defaults to 0.1.
 
         Returns:
             _type_: _description_
@@ -245,8 +257,8 @@ class MotionPlanner:
             cartesianResponse.solution.joint_trajectory
         ]
         goalMessage.reference_trajectories = [genericTrajectory]
-        goalMessage.max_velocity_scaling_factor = 0.1
-        goalMessage.max_acceleration_scaling_factor = 0.1
+        goalMessage.max_velocity_scaling_factor = max_vel
+        goalMessage.max_acceleration_scaling_factor = max_accel
         goalMessage.allowed_planning_time = 10.0
         goalMessage.num_planning_attempts = 50
         goalRequest = MoveGroup.Goal(request=goalMessage)
