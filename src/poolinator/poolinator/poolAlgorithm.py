@@ -198,7 +198,7 @@ class PoolAlgorithm:
         # Return appropriate values
         return possible, ee, strike_ang
 
-    def calc_cue_targ(self, cue_ball, pockets):
+    def calc_cue_targ(self, cue_ball, balls, pockets):
         """
         Calculates final target_ball and desired cue pose for the shot.
 
@@ -206,6 +206,7 @@ class PoolAlgorithm:
         ----
         cue_ball (Vector3):
             Position of the cue_ball
+        
         [pocket]:
             A list of every pocket on the table containing its x, y, z
             value (Vector3).
@@ -231,7 +232,7 @@ class PoolAlgorithm:
                 if possible:
                     return cue, strike_ang, key1
 
-    def calc_strike_pose(self, cue_ball, pockets):
+    def calc_strike_pose(self, cue_ball, balls, pockets):
         """
         Calculates end-effector pose in the base frame for the desired
         shot.
@@ -240,6 +241,10 @@ class PoolAlgorithm:
         ----
         cue_ball (Vector3):
             Position of the cue_ball
+        balls (dict):
+            A dictionary of every pool ball on the table containing
+            the name of the ball and its position (Vector3).
+            {"Name" : (x, y, z)}
         [pocket]:
             A list of every pocket on the table containing its x, y, z
             value (Vector3).
@@ -248,7 +253,7 @@ class PoolAlgorithm:
         -------
         eePose (Pose)
         """
-
+        self.balls = balls
         ee, strike_ang, _ = self.calc_cue_targ(cue_ball, pockets)
         eePose = Pose()
         eePose.position = ee
