@@ -96,15 +96,16 @@ class ControlNode(Node):
                     ball = value
             pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
 
-            eePose = pool_algo.test_strike_pose(ball, self.pockets[2])
+            eePose = pool_algo.test_strike_pose(ball, self.pockets[0])
             await self.strike_ball(eePose)
 
-            await self.stand_by()
+            # await self.stand_by()
 
             self.state = State.STANDBY
 
     async def strike_cue_callback(self, request, response):
-        self.state = State.LIVE
+        if self.state == State.STANDBY:
+            self.state = State.LIVE
 
         return response
 
@@ -221,14 +222,14 @@ class ControlNode(Node):
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
 
-        # eeMotion = Pose()
-        # # Move along x axis of ee
-        # eeMotion.position.x = -0.17
-        # movement = self.world.strikeTransform(eeMotion)
-        # eePose.position.x = movement.position.x
-        # eePose.position.y = movement.position.y
-        # resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        # await resultFuture
+        eeMotion = Pose()
+        # Move along x axis of ee
+        eeMotion.position.x = -0.17
+        movement = self.world.strikeTransform(eeMotion)
+        eePose.position.x = movement.position.x
+        eePose.position.y = movement.position.y
+        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        await resultFuture
 
         # Strike position
         eePose.position.z -= 0.11
