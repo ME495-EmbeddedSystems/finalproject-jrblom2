@@ -252,7 +252,7 @@ class PoolAlgorithm:
         # ee.y = self.cue_ball_pos.y - self.d*math.sin(strike_ang)
         ee.x = self.cue_ball_pos.x
         ee.y = self.cue_ball_pos.y
-        ee.z = self.cue_ball_pos.z + 0.25
+        ee.z = self.cue_ball_pos.z + 0.1
         
         q = quaternion_from_euler(0.0, 0.0, float(strike_ang))
         eePose = Pose()
@@ -262,8 +262,7 @@ class PoolAlgorithm:
         # eeOrientation.y = 0.0
         # eeOrientation.z = math.sin(strike_ang/2)
         # eeOrientation.w = math.cos(strike_ang/2)  # Pure rotation about the z axis
-        # eePose.orientation = eeOrientation
-        eePose.orientation = Quaternion(x=0.9238795325112867, y=-0.3826834323650898, z=-2.3432602026631493e-17, w=5.657130561438501e-17)
+        eePose.orientation = eeOrientation
         return eePose
 
     def calc_strike_pose(self):
