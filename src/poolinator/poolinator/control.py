@@ -23,7 +23,9 @@ class State(Enum):
     """Keep track of the robots current command."""
 
     SETUP = auto()
-    RUNNING = auto()
+    LIVE = auto()
+    STANDBY = auto()
+    EXECUTING = auto()
 
 
 class ControlNode(Node):
@@ -53,6 +55,10 @@ class ControlNode(Node):
             Empty, 'strike_redball', self.strike_redball_callback
         )
 
+        self.strike_cue = self.create_service(
+            Empty, 'strike_cue', self.strike_cue_callback
+        )
+
         self.mp_interface = MotionPlanningInterface(self)
         self.world = World(
             self,
@@ -66,19 +72,41 @@ class ControlNode(Node):
         self.pockets = None
         self.pool_algo = None
 
-    def timer_callback(self):
+    async def timer_callback(self):
         # Stay in setup state until pool table frames exist from CV
         if self.state == State.SETUP:
             if self.world.tableTagExists():
                 self.world.buildTable()
             if self.world.tableExists():
                 self.setup_scene()
-                self.state = State.RUNNING
+                self.state = State.STANDBY
                 return
 
-        if self.state == State.RUNNING:
+        if self.state == State.STANDBY:
             self.ballDict = self.world.ballPositions()
             self.pockets = self.world.pocketPositions()
+
+        if self.state == State.LIVE:
+            self.state = State.EXECUTING
+
+            self.ballDict = self.world.ballPositions()
+            self.pockets = self.world.pocketPositions()
+            for key, value in self.ballDict.items():
+                if key == 'red_ball':
+                    ball = value
+            pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
+
+            eePose = pool_algo.test_strike_pose(ball, self.pockets[2])
+            await self.strike_ball(eePose)
+
+            await self.stand_by()
+
+            self.state = State.STANDBY
+
+    async def strike_cue_callback(self, request, response):
+        self.state = State.LIVE
+
+        return response
 
     async def strike_redball_callback(self, request, response):
         if self.pockets:
@@ -221,6 +249,11 @@ class ControlNode(Node):
 
     async def stand_by(self):
         readyPose = Pose()
+        readyPose.position.x = 0.3
+        readyPose.position.z = 0.48
+        readyPose.orientation.x = 1.0
+        resultFuture = await self.mp_interface.mp.pathPlanPose(readyPose)
+        await resultFuture
 
     def setup_scene(self):
         tableWidth = 2.0
