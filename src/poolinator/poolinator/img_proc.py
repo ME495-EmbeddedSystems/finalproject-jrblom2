@@ -72,9 +72,9 @@ class ImageProcessNode(Node):
         self.pix = None
         self.pix_grade = None
 
-        self.ball_x = None
-        self.ball_y = None
-        self.ball_z = None
+        self.red_ball_x = None
+        self.red_ball_y = None
+        self.red_ball_z = None
 
         self.blue_ball_x = None
         self.blue_ball_y = None
@@ -93,15 +93,18 @@ class ImageProcessNode(Node):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
+            if self.red_ball_x is None:
+                return
+
             t = TransformStamped()
 
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = 'camera_color_optical_frame'
             t.child_frame_id = 'red_ball'
 
-            t.transform.translation.x = float(self.ball_x)
-            t.transform.translation.y = float(self.ball_y)
-            t.transform.translation.z = float(self.ball_z)
+            t.transform.translation.x = float(self.red_ball_x)
+            t.transform.translation.y = float(self.red_ball_y)
+            t.transform.translation.z = float(self.red_ball_z)
 
             q = quaternion_from_euler(0, 0, 0)
             t.transform.rotation = q
@@ -115,6 +118,9 @@ class ImageProcessNode(Node):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
+            if self.blue_ball_x is None:
+                return
+
             t = TransformStamped()
 
             t.header.stamp = self.get_clock().now().to_msg()
@@ -315,7 +321,11 @@ class ImageProcessNode(Node):
 
         # Check if any red pixels detected
         if cx is None or cy is None:
-            self.get_logger().info('No ball detected')
+            self.get_logger().info('No red ball detected')
+            self.red_ball_x = None
+            self.red_ball_y = None
+            self.red_ball_z = None
+
         else:
             self.cx = cx
             self.cy = cy
@@ -323,9 +333,9 @@ class ImageProcessNode(Node):
         if cx and cy and self.depth_value:
             coords = self.pixel_to_world(cx, cy, self.depth_value)
             if coords:
-                self.ball_x = coords[0]
-                self.ball_y = coords[1]
-                self.ball_z = coords[2]
+                self.red_ball_x = coords[0]
+                self.red_ball_y = coords[1]
+                self.red_ball_z = coords[2]
 
         self.pub_redball.publish(new_msg)
 
@@ -337,8 +347,6 @@ class ImageProcessNode(Node):
             image (_type_): _description_
         """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-        # lower_blue = np.array([0,0,200])
-        # upper_blue = np.array([180, 30, 255])
 
         lower_blue = np.array([100,150,50])
         upper_blue = np.array([140, 255, 255])
@@ -351,6 +359,12 @@ class ImageProcessNode(Node):
 
         # Find the center of mass (centroid) of the ball
         cx, cy = self.find_center_of_mass(blue_ball_mask)
+
+        if cx is None or cy is None:
+            self.get_logger().info('No blue ball detected')
+            self.blue_ball_x = None
+            self.blue_ball_y = None
+            self.blue_ball_z = None
 
         if cx and cy and self.depth_value:
             coords = self.pixel_to_world(cx, cy, self.depth_value)
