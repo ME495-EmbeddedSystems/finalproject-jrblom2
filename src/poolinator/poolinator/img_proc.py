@@ -44,12 +44,16 @@ class ImageProcessNode(Node):
     image (sensor_msgs/msg/Image): The image on which to do the processing
     """
 
-    def __init__(self, depth_image_topic, depth_info_topic):
+    def __init__(self):
         super().__init__('image_processor_colors')
         self.bridge = CvBridge()
-        self.create_subscription(msg_Image, 'rgb_image', self.rgb_process, 10)
+        self.create_subscription(
+            msg_Image, 'rgb_image', self.rgb_process, 10)
         self.create_subscription(
             msg_Image, 'depth_image', self.depth_process, 10
+        )
+        self.create_subscription(
+            CameraInfo, 'color_camera_info', self.imageDepthInfoCallback, 1
         )
 
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
@@ -67,12 +71,6 @@ class ImageProcessNode(Node):
         self.rgb_image_height = None
         self.rgb_image_width = None
 
-        self.sub = self.create_subscription(
-            msg_Image, depth_image_topic, self.imageDepthCallback, 1
-        )
-        self.sub_info = self.create_subscription(
-            CameraInfo, depth_info_topic, self.imageDepthInfoCallback, 1
-        )
         self.intrinsics = None
         self.pix = None
         self.pix_grade = None
@@ -136,48 +134,6 @@ class ImageProcessNode(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
-    def imageDepthCallback(self, data):
-        """_summary_
-
-        Args:
-            data (_type_): _description_
-        """
-        try:
-            cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
-            # pick one pixel among all the pixels with the closest range:
-            indices = np.array(
-                np.where(cv_image == cv_image[cv_image > 0].min())
-            )[:, 0]
-            pix = (indices[1], indices[0])
-            self.pix = pix
-            line = '\rDepth at pixel(%3d, %3d): %7.1f(mm).' % (
-                pix[0],
-                pix[1],
-                cv_image[pix[1], pix[0]],
-            )
-
-            if self.intrinsics:
-                depth = cv_image[pix[1], pix[0]]
-                result = rs2.rs2_deproject_pixel_to_point(
-                    self.intrinsics, [pix[0], pix[1]], depth
-                )
-                line += '  Coordinate: %8.2f %8.2f %8.2f.' % (
-                    result[0],
-                    result[1],
-                    result[2],
-                )
-            if not self.pix_grade is None:
-                line += ' Grade: %2d' % self.pix_grade
-            line += '\r'
-            sys.stdout.write(line)
-            sys.stdout.flush()
-
-        except CvBridgeError as e:
-            print(e)
-            return
-        except ValueError as e:
-            return
-
     def imageDepthInfoCallback(self, cameraInfo):
         """_summary_
 
@@ -194,12 +150,6 @@ class ImageProcessNode(Node):
             self.intrinsics.ppy = cameraInfo.k[5]
             self.intrinsics.fx = cameraInfo.k[0]
             self.intrinsics.fy = cameraInfo.k[4]
-
-            if cameraInfo.distortion_model == 'plumb_bob':
-                self.intrinsics.model = rs2.distortion.brown_conrady
-            elif cameraInfo.distortion_model == 'equidistant':
-                self.intrinsics.model = rs2.distortion.kannala_brandt4
-            self.intrinsics.coeffs = [i for i in cameraInfo.d]
         except CvBridgeError as e:
             print(e)
             return
@@ -239,10 +189,7 @@ class ImageProcessNode(Node):
         if contours:
             largest_contour = max(contours, key=cv.contourArea)
 
-            # hull = cv.convexHull(largest_contour)
-            # cv.polylines(image, [hull], isClosed=True, color=(255, 0, 0), thickness=2)
-
-            # # Get the bounding rectangle
+            # Get the bounding rectangle
             x_bound, y_bound, w_bound, h_bound = cv.boundingRect(
                 largest_contour
             )
@@ -403,7 +350,7 @@ class ImageProcessNode(Node):
 
                 area = cv.contourArea(largest_contour)
 
-                radius = np.sqrt(area / np.pi)
+                # radius = np.sqrt(area / np.pi)
                 # self.get_logger().info(f'radius: {radius}')
 
                 return cx, cy
@@ -433,20 +380,9 @@ class ImageProcessNode(Node):
             return [x, y, z]
         return None
 
-    # def get_depth_scale(self):
-    #     pipeline = rs2.pipeline()
-    #     profile = pipeline.start()
-    #     depth_sensor = profile.get_device().first_depth_sensor()
-    #     depth_scale = depth_sensor.get_depth_scale()
-    #     pipeline.stop()
-    #     return depth_scale
-
     def timer_callback(self):
         self.broadcast_camera_to_redball()
         self.broadcast_camera_to_otherballs()
-
-        # if self.depth_scale == None:
-        #     self.depth_scale = self.get_depth_scale()
 
     def destroy_node(self):
         self.pipeline.stop()
@@ -454,11 +390,8 @@ class ImageProcessNode(Node):
 
 
 def main():
-    depth_image_topic = '/camera/camera/depth/image_rect_raw'
-    depth_info_topic = '/camera/camera/color/camera_info'
-
     rclpy.init()
-    n = ImageProcessNode(depth_image_topic, depth_info_topic)
+    n = ImageProcessNode()
     rclpy.spin(n)
     n.destroy_node()
     rclpy.shutdown()

@@ -23,6 +23,7 @@
     <node pkg='poolinator' exec='img_proc' name='img_proc' output='screen'>
         <remap from='rgb_image' to='/camera/camera/color/image_raw' />
         <remap from='depth_image' to='/camera/camera/aligned_depth_to_color/image_raw' />
+        <remap from='color_camera_info' to='/camera/camera/color/camera_info' />
     </node>
 
     <!-- <node pkg='poolinator' exec='yolo' name='yolo' output='screen'>
