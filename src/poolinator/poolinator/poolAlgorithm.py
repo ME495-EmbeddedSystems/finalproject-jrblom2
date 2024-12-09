@@ -65,8 +65,8 @@ class PoolAlgorithm:
         """
         self.balls = balls
         self.pockets = pockets
-        self.D_ball = 0.00258  # diameter of pool balls (meters)
-        self.D_stick = 0.0037  # diameter of pool stick (meters)
+        self.D_ball = 0.0258  # diameter of pool balls (meters)
+        self.D_stick = 0.037  # diameter of pool stick (meters)
         self.d = (
             0.17  # distance from target shot and end-effector frame (meters)
         )
