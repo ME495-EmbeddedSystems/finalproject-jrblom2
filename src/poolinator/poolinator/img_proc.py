@@ -53,7 +53,7 @@ class ImageProcessNode(Node):
         )
 
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
-        self.pub_whiteball = self.create_publisher(msg_Image, 'white_ball', 10)
+        self.pub_blueball = self.create_publisher(msg_Image, 'blue_ball', 10)
         self.pub_circles = self.create_publisher(msg_Image, 'circles', 10)
         self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
@@ -76,9 +76,9 @@ class ImageProcessNode(Node):
         self.ball_y = None
         self.ball_z = None
 
-        self.white_ball_x = None
-        self.white_ball_y = None
-        self.white_ball_z = None
+        self.blue_ball_x = None
+        self.blue_ball_y = None
+        self.blue_ball_z = None
 
         self.x_bound_green = None
         self.y_bound_green = None
@@ -111,7 +111,7 @@ class ImageProcessNode(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
-    def broadcast_camera_to_whiteball(self):
+    def broadcast_camera_to_blueball(self):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
@@ -119,11 +119,11 @@ class ImageProcessNode(Node):
 
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = 'camera_color_optical_frame'
-            t.child_frame_id = 'white_ball'
+            t.child_frame_id = 'blue_ball'
 
-            t.transform.translation.x = float(self.white_ball_x)
-            t.transform.translation.y = float(self.white_ball_y)
-            t.transform.translation.z = float(self.white_ball_z)
+            t.transform.translation.x = float(self.blue_ball_x)
+            t.transform.translation.y = float(self.blue_ball_y)
+            t.transform.translation.z = float(self.blue_ball_z)
 
             q = quaternion_from_euler(0, 0, 0)
             t.transform.rotation = q
@@ -296,7 +296,7 @@ class ImageProcessNode(Node):
 
         self.detect_table(cv_image)
         self.detect_circles(cv_image)
-        self.rgb_process_white_ball(cv_image)
+        self.rgb_process_blue_ball(cv_image)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
 
@@ -330,23 +330,27 @@ class ImageProcessNode(Node):
         self.pub_redball.publish(new_msg)
 
     
-    def rgb_process_white_ball(self, image):
+    def rgb_process_blue_ball(self, image):
         """_summary_
 
         Args:
             image (_type_): _description_
         """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-        lower_white = np.array([0,0,200])
-        upper_white = np.array([180, 30, 255])
+        # lower_blue = np.array([0,0,200])
+        # upper_blue = np.array([180, 30, 255])
 
-        white_ball_mask = cv.inRange(hsv_image, lower_white, upper_white)
+        lower_blue = np.array([100,150,50])
+        upper_blue = np.array([140, 255, 255])
+
+
+        blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
     
-        white_ball = cv.bitwise_and(hsv_image, hsv_image, mask=white_ball_mask)
-        new_msg = self.bridge.cv2_to_imgmsg(white_ball, encoding='bgr8')
+        blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
+        new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
 
         # Find the center of mass (centroid) of the red ball
-        cx, cy = self.find_center_of_mass(white_ball_mask)
+        cx, cy = self.find_center_of_mass(blue_ball_mask)
 
         if cx and self.x_bound_green:
             # Check if the circle's center is within the bounding rectangle
@@ -357,11 +361,11 @@ class ImageProcessNode(Node):
                 if cx and cy and self.depth_value:
                     coords = self.pixel_to_world(cx, cy, self.depth_value)
                     if coords:
-                        self.white_ball_x = coords[0]
-                        self.white_ball_y = coords[1]
-                        self.white_ball_z = coords[2]
+                        self.blue_ball_x = coords[0]
+                        self.blue_ball_y = coords[1]
+                        self.blue_ball_z = coords[2]
 
-                self.pub_whiteball.publish(new_msg)
+                self.pub_blueball.publish(new_msg)
 
     def depth_process(self, image):
         """Callback to process the depth image.
@@ -439,7 +443,7 @@ class ImageProcessNode(Node):
 
     def timer_callback(self):
         self.broadcast_camera_to_redball()
-        self.broadcast_camera_to_whiteball()
+        self.broadcast_camera_to_blueball()
         self.broadcast_camera_to_otherballs()
 
     def destroy_node(self):

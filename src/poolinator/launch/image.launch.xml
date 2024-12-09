@@ -15,6 +15,7 @@
 
     <node pkg='apriltag_ros' exec='apriltag_node'>
         <param from='$(find-pkg-share poolinator)/config/tags.yaml' />
+        <param name='log-level' value='error' />
         <remap from='image_rect' to='/camera/camera/color/image_raw'/>
         <remap from='camera_info' to='/camera/camera/camera_info'/>
     </node>
