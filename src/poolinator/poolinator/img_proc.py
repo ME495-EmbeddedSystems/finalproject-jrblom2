@@ -349,23 +349,17 @@ class ImageProcessNode(Node):
         blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
         new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
 
-        # Find the center of mass (centroid) of the red ball
+        # Find the center of mass (centroid) of the ball
         cx, cy = self.find_center_of_mass(blue_ball_mask)
 
-        if cx and self.x_bound_green:
-            # Check if the circle's center is within the bounding rectangle
-            if (
-                self.x_bound_green <= cx <= self.x_bound_green + self.w_bound_green
-                and self.y_bound_green <= cy <= self.y_bound_green + self.h_bound_green
-            ):
-                if cx and cy and self.depth_value:
-                    coords = self.pixel_to_world(cx, cy, self.depth_value)
-                    if coords:
-                        self.blue_ball_x = coords[0]
-                        self.blue_ball_y = coords[1]
-                        self.blue_ball_z = coords[2]
+        if cx and cy and self.depth_value:
+            coords = self.pixel_to_world(cx, cy, self.depth_value)
+            if coords:
+                self.blue_ball_x = coords[0]
+                self.blue_ball_y = coords[1]
+                self.blue_ball_z = coords[2]
 
-                self.pub_blueball.publish(new_msg)
+        self.pub_blueball.publish(new_msg)
 
     def depth_process(self, image):
         """Callback to process the depth image.
