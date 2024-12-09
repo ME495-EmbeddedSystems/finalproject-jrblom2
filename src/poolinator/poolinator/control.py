@@ -70,6 +70,7 @@ class ControlNode(Node):
         if self.state == State.SETUP:
             if self.world.tableExists():
                 # Add planning scene objects here before running
+                self.world.buildTable()
                 self.setup_scene()
                 self.state = State.RUNNING
             return
