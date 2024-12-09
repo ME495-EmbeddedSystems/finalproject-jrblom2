@@ -198,14 +198,14 @@ class ImageProcessNode(Node):
             gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
             gray_blurred = cv.blur(gray, (3, 3))
 
-            minradius_in_px = 10
-            maxradius_in_px = 12
+            minradius_in_px = 12
+            maxradius_in_px = 14
             circles = cv.HoughCircles(
                 gray_blurred,
                 cv.HOUGH_GRADIENT,
                 dp=1.1,
                 minDist=minradius_in_px / 2,
-                param1=120,
+                param1=150,
                 param2=17,
                 minRadius=minradius_in_px,
                 maxRadius=maxradius_in_px,
@@ -225,7 +225,6 @@ class ImageProcessNode(Node):
                         x_bound <= a <= x_bound + w_bound
                         and y_bound <= b <= y_bound + h_bound
                     ):
-                        # if cv.pointPolygonTest(hull, (a, b), False) >= 0:
                         cv.circle(image, (a, b), r, (0, 255, 0), 2)
                         cv.circle(image, (a, b), 1, (0, 0, 255), 3)
 
