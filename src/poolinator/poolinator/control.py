@@ -85,13 +85,9 @@ class ControlNode(Node):
     async def strike_redball_callback(self, request, response):
         pocket_pos = self.world.pocketPositions()
         if pocket_pos:
-            c5 = pocket_pos[4]
-            pocket_z = c5.z
-            self.get_logger().info(f'pocket_z: {pocket_z}')
-
             if self.pool_algo:
                 eePose = self.pool_algo.test_strike_pose(pocket_pos[4])
-                self.get_logger().info(f'eePose: {eePose}')
+                self.get_logger().info(f'eePose strike_redball: {eePose}')
 
                 resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
                 await resultFuture
