@@ -1,6 +1,5 @@
 <launch>
     <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/detect_balls.rviz' description="Rviz configuration file."/>
-    <!-- <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/yolo.rviz' description="Rviz configuration file."/> -->
     
     <include file='$(find-pkg-share realsense2_camera)/launch/rs_launch.py' >
         <arg name='depth_module.profile' value='1280x720x30' />
@@ -26,8 +25,5 @@
         <remap from='color_camera_info' to='/camera/camera/color/camera_info' />
     </node>
 
-    <!-- <node pkg='poolinator' exec='yolo' name='yolo' output='screen'>
-        <remap from='rgb_image' to='/camera/camera/color/image_raw' />
-    </node> -->
 
 </launch>

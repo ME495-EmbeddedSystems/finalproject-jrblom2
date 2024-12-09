@@ -1,14 +1,10 @@
-import math
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
 import cv2 as cv
 
 from sensor_msgs.msg import Image as msg_Image
 from sensor_msgs.msg import CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
-import sys
-import os
 import numpy as np
 import pyrealsense2 as rs2
 
@@ -101,9 +97,6 @@ class ImageProcessNode(Node):
             t.transform.rotation = q
 
             self.tf_broadcaster.sendTransform(t)
-            # self.get_logger().info(
-            #     f"Published transform from {t.header.frame_id} to {t.child_frame_id}"
-            # )
             return
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
@@ -285,7 +278,6 @@ class ImageProcessNode(Node):
         if cx is None or cy is None:
             self.get_logger().info('No ball detected')
         else:
-            # self.get_logger().info(f'Ball at {cx}, {cy}')
             self.cx = cx
             self.cy = cy
 
@@ -295,9 +287,6 @@ class ImageProcessNode(Node):
                 self.ball_x = coords[0]
                 self.ball_y = coords[1]
                 self.ball_z = coords[2]
-                # self.get_logger().info(f'Ball at x: {self.ball_x}')
-                # self.get_logger().info(f'Ball at y: {self.ball_y}')
-                # self.get_logger().info(f'Ball at z: {self.ball_z}')
 
         self.pub_redball.publish(new_msg)
 
@@ -347,12 +336,7 @@ class ImageProcessNode(Node):
                 # Calculate the center of mass (cx, cy)
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
-
-                area = cv.contourArea(largest_contour)
-
-                # radius = np.sqrt(area / np.pi)
-                # self.get_logger().info(f'radius: {radius}')
-
+                
                 return cx, cy
         return None, None  # if no red ball is found
 

@@ -17,14 +17,12 @@ setup(
             [
                 'launch/image.launch.xml',
                 'launch/control.launch.xml',
-                'launch/rs_launch.py',
             ],
         ),
         (
             'share/' + package_name + '/config',
             ['config/default.rviz',
              'config/detect_balls.rviz', 
-             'config/yolo.rviz', 
              'config/tags.yaml',
              ],
         ),
@@ -41,7 +39,6 @@ setup(
             'bridger = poolinator.bridger:main',
             'img_proc = poolinator.img_proc:main',
             'control = poolinator.control:main',
-            'yolo = poolinator.yolo:main'
         ],
     },
 )
