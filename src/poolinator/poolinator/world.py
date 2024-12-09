@@ -89,7 +89,7 @@ class World:
             centerPose = Pose()
             centerPose.position.x = 0.09 + self.tableLength / 2
             centerPose.position.y = -(0.08 + self.tableWidth / 2)
-            centerPose.position.z = self.tableHeight
+            centerPose.position.z = self.tableHeight - 0.035
             centerInBase = do_transform_pose(centerPose, baseToCornerTag)
 
             t = TransformStamped()
@@ -212,7 +212,7 @@ class World:
             tf = self.tf_buffer.lookup_transform(
                 'base', 'table_center', rclpy.time.Time()
             )
-            return tf.transform.translation
+            return tf
 
         except TransformException:
             self.node.get_logger().error("Failed to get transform for center")

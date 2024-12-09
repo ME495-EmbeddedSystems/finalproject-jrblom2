@@ -246,10 +246,11 @@ class ControlNode(Node):
         poolTableHeight = 0.08
 
         posePoolTable = Pose()
-        poolTablePoint = self.world.center()
-        posePoolTable.position.x = poolTablePoint.x
-        posePoolTable.position.y = poolTablePoint.y
-        posePoolTable.position.z = poolTablePoint.z - 0.045
+        poolTableTf = self.world.center()
+        posePoolTable.position.x = poolTableTf.transform.translation.x
+        posePoolTable.position.y = poolTableTf.transform.translation.y
+        posePoolTable.position.z = poolTableTf.transform.translation.z - 0.045
+        posePoolTable.orientation = poolTableTf.transform.rotation
         self.mp_interface.ps.add_box(
             'poolTable',
             (poolTableWidth, poolTableLength, poolTableHeight),
