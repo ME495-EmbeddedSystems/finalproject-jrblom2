@@ -51,7 +51,7 @@ class World:
         self.tableWidth = 0.31
         self.tableLength = 0.51
         self.tableHeight = 0.09
-        self.tableTagSize = 0.14
+        self.tableTagSize = 0.135
 
         self.lastPockets = []
 
@@ -122,17 +122,17 @@ class World:
             return self.lastPockets
 
     def ballPositions(self):
-        ballPos = []
+        ballDict = {}
         try:
             for ball in self.ballNames:
                 tf = self.tf_buffer.lookup_transform(
                     'base', ball, rclpy.time.Time()
                 )
-                ballPos.append(tf.transform.translation)
+                ballDict[ball] = tf.transform.translation
         except TransformException:
             self.node.get_logger().error("Failed to get transform for balls")
 
-        return ballPos
+        return ballDict
 
     def center(self):
         try:

@@ -17,12 +17,14 @@ setup(
             [
                 'launch/image.launch.xml',
                 'launch/control.launch.xml',
-                'launch/rs_launch.py',
             ],
         ),
         (
             'share/' + package_name + '/config',
-            ['config/default.rviz', 'config/tags.yaml'],
+            ['config/default.rviz',
+             'config/detect_balls.rviz', 
+             'config/tags.yaml',
+             ],
         ),
     ],
     install_requires=['setuptools'],
@@ -35,7 +37,7 @@ setup(
     entry_points={
         'console_scripts': [
             'bridger = poolinator.bridger:main',
-            'bridger2 = poolinator.bridger2:main',
+            'img_proc = poolinator.img_proc:main',
             'control = poolinator.control:main',
         ],
     },

@@ -2,7 +2,7 @@ apriltag:                 # node name
   ros__parameters:
     # setup (defaults)
     image_transport: raw  # image format: "raw" or "compressed"
-    family: Standard41h12         # tag family name: 16h5, 25h9, 36h11
+    family: 36h11         # tag family name: 16h5, 25h9, 36h11
     size: 0.12             # default tag edge size in meter
     profile: false        # print profiling information to stdout
 
@@ -21,5 +21,7 @@ apriltag:                 # node name
     tag:
       ids:    [0, 4]         # tag IDs for which to publish transform
       frames: [table_tag, camera_que_tag]   # frame names
-      sizes:  [0.065, 0.012]     # tag-specific edge size, overrides the default 'size'
+      # sizes:  [0.067, 0.012]     # tag-specific edge size, overrides the default 'size'
+      # sizes:  [0.0635, 0.0105]     # tag-specific edge size, overrides the default 'size'
+      sizes:  [0.12, 0.025]     # tag-specific edge size, overrides the default 'size'
 

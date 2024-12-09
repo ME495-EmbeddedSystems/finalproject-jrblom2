@@ -16,6 +16,7 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 
 import numpy as np
 
+from poolinator.poolAlgorithm import *
 
 class State(Enum):
     """Keep track of the robots current command."""
@@ -47,14 +48,22 @@ class ControlNode(Node):
             Empty, 'center_strike', self.center_strike_callback
         )
 
+        self.strike_redball = self.create_service(
+            Empty, 'strike_redball', self.strike_redball_callback
+        )
+
         self.mp_interface = MotionPlanningInterface(self)
         self.world = World(
             self,
             'table_tag',
-            ['b1'],
+            ['red_ball'],
         )
 
         self.state = State.SETUP
+
+        self.ballDict = None
+        self.pockets = None
+        self.pool_algo = None
 
     def timer_callback(self):
         # Stay in setup state until pool table frames exist from CV
@@ -67,6 +76,30 @@ class ControlNode(Node):
 
         if self.state == State.RUNNING:
             pass
+
+        self.get_logger().info(f'self.world.ballPositions: {self.world.ballPositions()}')
+        self.ballDict = self.world.ballPositions()
+        self.pockets = self.world.pocketPositions()
+        self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
+
+    async def strike_redball_callback(self, request, response):
+        pocket_pos = self.world.pocketPositions()
+        if pocket_pos:
+            c5 = pocket_pos[4]
+            pocket_z = c5.z
+            self.get_logger().info(f'pocket_z: {pocket_z}')
+
+            if self.pool_algo:
+                eePose = self.pool_algo.test_strike_pose(pocket_pos[4])
+                self.get_logger().info(f'eePose: {eePose}')
+
+                resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+                await resultFuture
+                self.logger.info('Move Done')
+                return response
+
+        return response
+
 
     async def move_c1_callback(self, request, response):
         pocket_pos = self.world.pocketPositions()
@@ -142,6 +175,9 @@ class ControlNode(Node):
         eePose.position = eePosition
         eeOrientation = quaternion_from_euler(np.pi, 0, -np.pi / 4)
         eePose.orientation = eeOrientation
+
+        self.get_logger().info(f'eePose center strike: {eePose}')
+
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
         eePose.position.z -= 0.11

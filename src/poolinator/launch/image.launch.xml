@@ -1,7 +1,11 @@
 <launch>
-    <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/default.rviz' description="Rviz configuration file."/>
+    <arg name='rviz_config' default='$(find-pkg-share poolinator)/config/detect_balls.rviz' description="Rviz configuration file."/>
     
-    <include file='$(find-pkg-share poolinator)/launch/rs_launch.py' >
+    <include file='$(find-pkg-share realsense2_camera)/launch/rs_launch.py' >
+        <arg name='depth_module.profile' value='1280x720x30' />
+        <arg name='rgb_camera.profile' value='1280x720x30' />
+        <arg name='enable_sync' value='true' />
+        <arg name='align_depth.enable' value='true' />
     </include>
     
     <node pkg='rviz2' exec='rviz2' args="-d $(var rviz_config)"/>
@@ -12,12 +16,14 @@
     <node pkg='apriltag_ros' exec='apriltag_node'>
         <param from='$(find-pkg-share poolinator)/config/tags.yaml' />
         <remap from='image_rect' to='/camera/camera/color/image_raw'/>
-        <remap from='camera_info' to='/camera/camera_info'/>
+        <remap from='camera_info' to='/camera/camera/camera_info'/>
     </node>
 
-    <node pkg='poolinator' exec='bridger2' name='bridger2' output='screen'>
+    <node pkg='poolinator' exec='img_proc' name='img_proc' output='screen'>
         <remap from='rgb_image' to='/camera/camera/color/image_raw' />
-        <remap from='depth_image' to='/camera/camera/depth/image_rect_raw' />
+        <remap from='depth_image' to='/camera/camera/aligned_depth_to_color/image_raw' />
+        <remap from='color_camera_info' to='/camera/camera/color/camera_info' />
     </node>
+
 
 </launch>
