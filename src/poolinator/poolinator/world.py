@@ -58,14 +58,23 @@ class World:
         self.ballNames = ballTagNames
 
         self.tableWidth = 0.31
-        self.tableLength = 0.51
+        self.tableLength = 0.52
         self.tableHeight = 0.09
-        self.tableTagSize = 0.16
+
+    def tableTagExists(self):
+        try:
+            self.tf_buffer.lookup_transform(
+                'base', self.cornerTagName, rclpy.time.Time()
+            )
+            return True
+
+        except TransformException:
+            return False
 
     def tableExists(self):
         try:
             self.tf_buffer.lookup_transform(
-                'base', self.cornerTagName, rclpy.time.Time()
+                'base', 'table_center', rclpy.time.Time()
             )
             return True
 
@@ -78,18 +87,14 @@ class World:
                 'base', self.cornerTagName, rclpy.time.Time()
             )
             centerPose = Pose()
-            centerPose.position.x = (
-                self.tableTagSize / 2 + self.tableLength / 2
-            )
-            centerPose.position.y = -(
-                self.tableTagSize / 2 + self.tableWidth / 2
-            )
+            centerPose.position.x = 0.09 + self.tableLength / 2
+            centerPose.position.y = -(0.08 + self.tableWidth / 2)
             centerPose.position.z = self.tableHeight
             centerInBase = do_transform_pose(centerPose, baseToCornerTag)
 
             t = TransformStamped()
 
-            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.stamp = self.node.get_clock().now().to_msg()
             t.header.frame_id = 'base'
             t.child_frame_id = 'table_center'
 
@@ -107,7 +112,7 @@ class World:
             self.static_broadcaster.sendTransform(t)
 
             p = TransformStamped()
-            p.header.stamp = self.get_clock().now().to_msg()
+            p.header.stamp = self.node.get_clock().now().to_msg()
             p.header.frame_id = 'table_center'
 
             p.child_frame_id = 'pocket1'

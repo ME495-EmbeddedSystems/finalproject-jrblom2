@@ -18,6 +18,7 @@ import numpy as np
 
 from poolinator.poolAlgorithm import *
 
+
 class State(Enum):
     """Keep track of the robots current command."""
 
@@ -68,17 +69,19 @@ class ControlNode(Node):
     def timer_callback(self):
         # Stay in setup state until pool table frames exist from CV
         if self.state == State.SETUP:
-            if self.world.tableExists():
-                # Add planning scene objects here before running
+            if self.world.tableTagExists():
                 self.world.buildTable()
+            if self.world.tableExists():
                 self.setup_scene()
                 self.state = State.RUNNING
-            return
+                return
 
         if self.state == State.RUNNING:
             pass
 
-        self.get_logger().info(f'self.world.ballPositions: {self.world.ballPositions()}')
+        self.get_logger().info(
+            f'self.world.ballPositions: {self.world.ballPositions()}'
+        )
         self.ballDict = self.world.ballPositions()
         self.pockets = self.world.pocketPositions()
         self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
@@ -100,7 +103,6 @@ class ControlNode(Node):
                 return response
 
         return response
-
 
     async def move_c1_callback(self, request, response):
         pocket_pos = self.world.pocketPositions()
