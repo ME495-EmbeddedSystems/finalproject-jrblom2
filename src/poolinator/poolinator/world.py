@@ -170,37 +170,37 @@ class World:
         pocketPos = []
         try:
             p1 = self.tf_buffer.lookup_transform(
-                'base', 'pocket1', rclpy.time.Time()
+                'base', 'pocket4', rclpy.time.Time()
             )
             p1Translation = p1.transform.translation
             pocketPos.append(p1Translation)
 
             p2 = self.tf_buffer.lookup_transform(
-                'base', 'pocket2', rclpy.time.Time()
+                'base', 'pocket5', rclpy.time.Time()
             )
             p2Translation = p2.transform.translation
             pocketPos.append(p2Translation)
 
             p3 = self.tf_buffer.lookup_transform(
-                'base', 'pocket3', rclpy.time.Time()
+                'base', 'pocket6', rclpy.time.Time()
             )
             p3Translation = p3.transform.translation
             pocketPos.append(p3Translation)
 
             p4 = self.tf_buffer.lookup_transform(
-                'base', 'pocket4', rclpy.time.Time()
+                'base', 'pocket1', rclpy.time.Time()
             )
             p4Translation = p4.transform.translation
             pocketPos.append(p4Translation)
 
             p5 = self.tf_buffer.lookup_transform(
-                'base', 'pocket5', rclpy.time.Time()
+                'base', 'pocket2', rclpy.time.Time()
             )
             p5Translation = p5.transform.translation
             pocketPos.append(p5Translation)
 
             p6 = self.tf_buffer.lookup_transform(
-                'base', 'pocket6', rclpy.time.Time()
+                'base', 'pocket3', rclpy.time.Time()
             )
             p6Translation = p6.transform.translation
             pocketPos.append(p6Translation)

@@ -207,7 +207,7 @@ class PoolAlgorithm:
         # Calculate striking angle
         strike_ang = calc_ang(ball, impact)
         ee = Point()
-        ee.x = ball.x  self.d * math.cos(strike_ang)
+        ee.x = ball.x - self.d * math.cos(strike_ang)
         ee.y = ball.y - self.d * math.sin(strike_ang)
         ee.z = ball.z
 

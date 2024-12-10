@@ -90,6 +90,12 @@ class ControlNode(Node):
                 if key == 'red_ball':
                     ball = value
 
+            # If done, go home
+            if len(self.ballDict.items()) == 0:
+                await self.reset()
+                self.state = State.STANDBY
+                return
+
             # If no cue, standby
             if ball is None:
                 self.state = State.STANDBY
@@ -144,7 +150,7 @@ class ControlNode(Node):
 
         # Strike position
         eePose.position.z -= 0.09
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        resultFuture = await self.mp_interface.mp.cartesianPath(eePose)
         await resultFuture
 
         # Hit through
@@ -154,7 +160,7 @@ class ControlNode(Node):
         movement = self.world.strikeTransform(eeMotion)
         eePose.position.x = movement.position.x
         eePose.position.y = movement.position.y
-        resultFuture = await self.mp_interface.mp.pathPlanPose(
+        resultFuture = await self.mp_interface.mp.cartesianPath(
             eePose, startJoints=None, max_vel=0.8, max_accel=0.8
         )
         await resultFuture
@@ -163,6 +169,21 @@ class ControlNode(Node):
         """Return to standby position."""
         joints = {}
         joints['fer_joint1'] = np.pi / 4
+        joints['fer_joint2'] = -np.pi / 4
+        joints['fer_joint3'] = 0.0
+        joints['fer_joint4'] = -3 * np.pi / 4
+        joints['fer_joint5'] = 0.0
+        joints['fer_joint6'] = np.pi / 2
+        joints['fer_joint7'] = np.pi / 4
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(
+            joints, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
+        await resultFuture
+
+    async def reset(self):
+        """Return to reset position."""
+        joints = {}
+        joints['fer_joint1'] = 0.0
         joints['fer_joint2'] = -np.pi / 4
         joints['fer_joint3'] = 0.0
         joints['fer_joint4'] = -3 * np.pi / 4
