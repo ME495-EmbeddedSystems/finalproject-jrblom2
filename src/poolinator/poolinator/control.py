@@ -1,26 +1,33 @@
+"""
+Controls the arm to calculate and execute moves.
+
+SERVICES:
+  + strike_cue (std_srvs/srv/Empty) - Starts the game either from
+    startup or from a cue ball reset.
+
+"""
+
 from enum import auto, Enum
 
-import rclpy
-from rclpy.node import Node
-
-from poolinator.world import World
-from poolinator.bridger import quaternion_from_euler
+from geometry_msgs.msg import Pose
 
 from motion_planning_interface.MotionPlanningInterface import (
     MotionPlanningInterface,
 )
 
-from std_srvs.srv import Empty
-
-from geometry_msgs.msg import Point, Pose, Quaternion
-
 import numpy as np
 
 from poolinator.poolAlgorithm import PoolAlgorithm
+from poolinator.world import World
+
+import rclpy
+from rclpy.node import Node
+
+from std_srvs.srv import Empty
 
 
 class State(Enum):
-    """Keep track of the robots current command."""
+    """Keep track of the robots current state."""
 
     SETUP = auto()
     LIVE = auto()
@@ -29,7 +36,10 @@ class State(Enum):
 
 
 class ControlNode(Node):
+    """Controls the robot through the pool game."""
+
     def __init__(self):
+        """Set up the state."""
         super().__init__('control')
         self.logger = self.get_logger()
 
@@ -54,67 +64,80 @@ class ControlNode(Node):
         self.pool_algo = None
 
     async def timer_callback(self):
+        """Check state of control loop for running or waiting."""
         # Stay in setup state until pool table frames exist from CV
         if self.state == State.SETUP:
             if self.world.tableTagExists():
                 self.world.buildTable()
             if self.world.tableExists():
                 self.setup_scene()
-                self.ballDict = self.world.ballPositions()
-                self.pockets = self.world.pocketPositions()
+                self.update_world()
                 self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
                 self.state = State.STANDBY
                 return
 
+        # Ready to act
         if self.state == State.STANDBY:
-            self.ballDict = self.world.ballPositions()
-            self.pockets = self.world.pocketPositions()
-            self.logger.info(f'{self.ballDict}')
+            self.update_world()
 
+        # In the movement loop
         if self.state == State.LIVE:
             self.state = State.EXECUTING
 
-            self.ballDict = self.world.ballPositions()
-            self.pockets = self.world.pocketPositions()
+            self.update_world()
             for key, value in self.ballDict.items():
                 if key == 'red_ball':
                     ball = value
 
+            # If no cue, standby
+            if ball is None:
+                self.state = State.STANDBY
+                return
+
+            # Get strike pose
             eePose = self.pool_algo.calc_strike_pose(
                 ball, self.ballDict, self.pockets
             )
-            # eePose = self.pool_algo.test_strike_pose(ball, self.pockets[4])
 
             await self.strike_ball(eePose)
 
             await self.stand_by()
 
-            self.state = State.STANDBY
+            # Rebuild table in case it moved
+            self.world.buildTable()
+            self.update_world()
+
+            # Go next
+            self.state = State.LIVE
+
+    def update_world(self):
+        """Update the pockets and balls."""
+        self.ballDict = self.world.ballPositions()
+        self.pockets = self.world.pocketPositions()
 
     async def strike_cue_callback(self, request, response):
+        """Service to init robot from standby.
+
+        Args:
+            request (Empty): Unused
+            response (Empty): Unused
+
+        Returns:
+            Empty: unused
+        """
         if self.state == State.STANDBY:
             self.state = State.LIVE
 
         return response
 
     async def strike_ball(self, que_pose):
-        # Caroline, this is where we woulc call you function
-        # Or pass it into function
+        """Run motions to strike ball given pose."""
         eePose = que_pose
 
         # Standoff position
         eePose.position.z = 0.35
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
-
-        # eeMotion = Pose()
-        # # Move along x axis of ee
-        # eeMotion.position.x = -0.17
-        # movement = self.world.strikeTransform(eeMotion)
-        # eePose.position.x = movement.position.x
-        # eePose.position.y = movement.position.y
-        # resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        # await resultFuture
 
         # Strike position
         eePose.position.z -= 0.09
@@ -134,6 +157,7 @@ class ControlNode(Node):
         await resultFuture
 
     async def stand_by(self):
+        """Return to standby position."""
         joints = {}
         joints['fer_joint1'] = np.pi / 4
         joints['fer_joint2'] = -np.pi / 4
@@ -146,6 +170,7 @@ class ControlNode(Node):
         await resultFuture
 
     def setup_scene(self):
+        """Build the planning scene in Rviz."""
         tableWidth = 2.0
         tableLength = 2.4
         tableHeight = 0.1
@@ -190,6 +215,7 @@ class ControlNode(Node):
 
 
 def main():
+    """Run main function."""
     rclpy.init()
     n = ControlNode()
     rclpy.spin(n)

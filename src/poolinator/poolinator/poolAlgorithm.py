@@ -114,7 +114,7 @@ class PoolAlgorithm:
             if ball_1 == value or ball_2 == value or ball_ignore == value:
                 continue
 
-            # Check if potential obstruction is actually within the appropriate range
+            # Check if potential obstruction is within the appropriate range
             if not (
                 min(ball_1.x, ball_2.x) <= value.x <= max(ball_1.x, ball_2.x)
             ):
