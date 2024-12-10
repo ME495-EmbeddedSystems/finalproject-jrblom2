@@ -53,7 +53,6 @@ class World:
         self.tf_broadcaster = TransformBroadcaster(self.node)
         self.static_broadcaster = StaticTransformBroadcaster(self.node)
 
-        cache_duration = Duration(seconds=1.0)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
@@ -225,8 +224,12 @@ class World:
                 tf = self.tf_buffer.lookup_transform(
                     'base', ball, rclpy.time.Time()
                 )
-                
-                if (self.node.get_clock().now().to_msg().secs - tf.header.stamp.secs <= 1):
+
+                if (
+                    self.node.get_clock().now().to_msg().sec
+                    - tf.header.stamp.sec
+                    <= 1
+                ):
                     ballDict[ball] = tf.transform.translation
             except TransformException:
                 self.node.get_logger().debug(

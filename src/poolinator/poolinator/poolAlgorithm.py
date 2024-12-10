@@ -211,11 +211,7 @@ class PoolAlgorithm:
         ee.y = ball.y
         ee.z = ball.z
 
-        q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
-        eePose = Pose()
-        eePose.position = ee
-        eePose.orientation = q
-        return eePose, strike_ang
+        return ee, strike_ang
 
     def calc_cue_targ(self, cue_ball, pockets):
         """
@@ -235,7 +231,9 @@ class PoolAlgorithm:
         cue(Point):
             Position of the cue stick.
         strike_ang(float):
-            Rotation about the z axis at that point
+            Rotation about the z axis at that point # If only cue ball left, send to pocket 1
+                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[0])
+                    return ee, strike_ang, key1
         target_name(string):
             Name of the target ball
         """
@@ -245,12 +243,11 @@ class PoolAlgorithm:
         for key1, value1 in self.balls.items():
             if key1 == "red_ball":
                 # Check if it is the last shot
-                if (len(self.balls) == 1) {
+                if len(self.balls) == 1:
                     # If only cue ball left, send to pocket 1
-                    ee, strike_ang = sink_cue_ball(cue_ball, pockets[0]); 
+                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[0])
                     return ee, strike_ang, key1
-                }
-            continue
+                continue
 
             for i in range(N):
                 possible, cue, strike_ang = self.calc_cue_pos(
@@ -275,7 +272,7 @@ class PoolAlgorithm:
         [pocket]:
             A list of every pocket on the table containing its x, y, z
             value (Vector3).
-        [ee_list]: 
+        [ee_list]:
             A list of previously tried end-effector positions that resulted
             in a singularity or joint limit.
 

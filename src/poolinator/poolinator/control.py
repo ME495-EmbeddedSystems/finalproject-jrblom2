@@ -85,7 +85,7 @@ class ControlNode(Node):
             self.state = State.EXECUTING
 
             self.update_world()
-            self.logger.info(f'{self.ballDict.items()}')
+            ball = None
             for key, value in self.ballDict.items():
                 if key == 'red_ball':
                     ball = value

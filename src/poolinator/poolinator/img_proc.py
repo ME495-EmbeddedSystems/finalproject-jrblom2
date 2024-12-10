@@ -223,7 +223,7 @@ class ImageProcessNode(Node):
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
 
-            if area >= 200 and area <= 600:  # Area big enough to be a ball
+            if area >= 200 and area <= 900:  # Area big enough to be a ball
                 self.cx = cx
                 self.cy = cy
                 # self.get_logger().info(f"Red ball contour area: {area}")
