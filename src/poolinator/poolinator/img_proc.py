@@ -411,55 +411,6 @@ class ImageProcessNode(Node):
             self.yellow_ball_dict = ball_dict
             self.pub_yellowball.publish(new_msg)
 
-    def rgb_process_ball_color(self, image, lower_hsv, upper_hsv, colorname):
-        """_summary_
-
-        Args:
-            image (_type_): _description_
-        """
-        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
-        lower_hsv = np.array([100, 150, 50])
-        upper_hsv = np.array([140, 255, 255])
-
-
-        color_mask = cv.inRange(hsv_image, lower_hsv, upper_hsv)
-    
-        color_ball = cv.bitwise_and(hsv_image, hsv_image, mask=color_mask)
-        new_msg = self.bridge.cv2_to_imgmsg(color_ball, encoding='bgr8')
-
-        # Find the center of mass (centroid) of the ball
-        cx, cy, largest_contour = self.find_center_of_mass(color_mask)
-
-        if largest_contour is not None:
-            area = cv.contourArea(largest_contour)
-
-            if area >= 150 and area <= 600:
-                self.get_logger().info(f"Blue ball contour area: {area}")
-                if cx and cy and self.depth_value:
-                    self.has_blue_ball = True
-                    coords = self.pixel_to_world(cx, cy, self.depth_value)
-                    if coords:
-                        self.blue_ball_x = coords[0]
-                        self.blue_ball_y = coords[1]
-                        self.blue_ball_z = coords[2]
-            else:
-                # Contour found but area not in range, treat as no ball
-                self.has_blue_ball = False
-                self.get_logger().info('No blue ball detected')
-                self.blue_ball_x = None
-                self.blue_ball_y = None
-                self.blue_ball_z = None
-        else:
-            # No contour found at all
-            self.has_blue_ball = False
-            self.get_logger().info('No blue ball detected')
-            self.blue_ball_x = None
-            self.blue_ball_y = None
-            self.blue_ball_z = None
-
-        self.pub_blueball.publish(new_msg)
-
     def depth_process(self, image):
         """Callback to process the depth image.
 
