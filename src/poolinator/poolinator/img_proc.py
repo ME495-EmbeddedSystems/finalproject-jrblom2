@@ -442,15 +442,15 @@ class ImageProcessNode(Node):
         valid_contours = self.find_center_of_mass_multiple_contours(blue_ball_mask)
 
         self.blue_ball_dict = {}
-        self.get_logger().info(f"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
         self.get_logger().info(f"self.depth_value: {self.depth_value}")
 
         if valid_contours and self.depth_value:
-            self.get_logger().info(f"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-
             for i in range(len(valid_contours)):
                 cx = valid_contours[i][1]
                 cy = valid_contours[i][2]
+
+                self.cx = cx
+                self.cy = cy
                 coords = self.pixel_to_world(cx, cy, self.depth_value)
                 if coords:
                     ball_name = 'blue' + str(i)
