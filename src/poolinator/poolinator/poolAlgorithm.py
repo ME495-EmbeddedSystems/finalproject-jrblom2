@@ -198,6 +198,25 @@ class PoolAlgorithm:
         # Return appropriate values
         return possible, ee, strike_ang
 
+    def sink_cue_ball(self, ball, impact):
+        """
+        Test function for a single ball.
+        Impact is the x, y, z vector3 point for the pocket or point on the wall.
+        """
+
+        # Calculate striking angle
+        strike_ang = calc_ang(ball, impact)
+        ee = Point()
+        ee.x = ball.x
+        ee.y = ball.y
+        ee.z = ball.z
+
+        q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
+        eePose = Pose()
+        eePose.position = ee
+        eePose.orientation = q
+        return eePose, strike_ang
+
     def calc_cue_targ(self, cue_ball, pockets):
         """
         Calculates final target_ball and desired cue pose for the shot.
@@ -221,10 +240,18 @@ class PoolAlgorithm:
             Name of the target ball
         """
         N = len(pockets)
+
         # Check direct shot
         for key1, value1 in self.balls.items():
             if key1 == "red_ball":
-                continue
+                # Check if it is the last shot
+                if (len(self.balls) == 1) {
+                    # If only cue ball left, send to pocket 1
+                    ee, strike_ang = sink_cue_ball(cue_ball, pockets[0]); 
+                    return ee, strike_ang, key1
+                }
+            continue
+
             for i in range(N):
                 possible, cue, strike_ang = self.calc_cue_pos(
                     cue_ball, value1, pockets[i]
@@ -232,7 +259,7 @@ class PoolAlgorithm:
                 if possible:
                     return cue, strike_ang, key1
 
-    def calc_strike_pose(self, cue_ball, balls, pockets):
+    def calc_strike_pose(self, cue_ball, balls, pockets, ee_list=None):
         """
         Calculates end-effector pose in the base frame for the desired
         shot.
@@ -248,6 +275,9 @@ class PoolAlgorithm:
         [pocket]:
             A list of every pocket on the table containing its x, y, z
             value (Vector3).
+        [ee_list]: 
+            A list of previously tried end-effector positions that resulted
+            in a singularity or joint limit.
 
         Returns
         -------
@@ -258,25 +288,6 @@ class PoolAlgorithm:
         eePose = Pose()
         eePose.position = ee
         q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
-        eePose.orientation = q
-        return eePose
-
-    def test_strike_pose(self, ball, impact):
-        """
-        Test function for a single ball.
-        Impact is the x, y, z vector3 point for the pocket or point on the wall.
-        """
-
-        # Calculate striking angle
-        strike_ang = calc_ang(ball, impact)
-        ee = Point()
-        ee.x = ball.x
-        ee.y = ball.y
-        ee.z = ball.z
-
-        q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
-        eePose = Pose()
-        eePose.position = ee
         eePose.orientation = q
         return eePose
 
