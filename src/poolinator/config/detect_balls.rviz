@@ -55,7 +55,7 @@ Visualization Manager:
       Enabled: true
       Filter (blacklist): ""
       Filter (whitelist): ""
-      Frame Timeout: 15
+      Frame Timeout: 1
       Frames:
         All Enabled: false
         blue0:

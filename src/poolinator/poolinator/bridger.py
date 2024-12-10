@@ -1,22 +1,18 @@
-import numpy as np
 import math
-import cv2 as cv
+
+import numpy as np
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
-from apriltag import apriltag
 
-from tf2_ros import TransformBroadcaster
-from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-from geometry_msgs.msg import TransformStamped, Quaternion
+from geometry_msgs.msg import Pose, Quaternion, TransformStamped
+
 from tf2_geometry_msgs import do_transform_pose
 
-from tf2_ros import TransformException
+from tf2_ros import TransformBroadcaster, TransformException
 from tf2_ros.buffer import Buffer
+from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros.transform_listener import TransformListener
-
-from geometry_msgs.msg import Pose
 
 
 def quaternion_from_euler(ai, aj, ak):
@@ -81,8 +77,8 @@ class BridgeNode(Node):
                 t.transform.rotation = q
 
                 self.static_broadcaster.sendTransform(t)
-                self.get_logger().info(
-                    f"Published transform from {t.header.frame_id} to {t.child_frame_id}"
+                self.get_logger().debug(
+                    f"Transform from {t.header.frame_id} to {t.child_frame_id}"
                 )
                 return
             except Exception as e:

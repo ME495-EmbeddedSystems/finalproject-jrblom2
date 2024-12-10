@@ -21,10 +21,10 @@ setup(
         ),
         (
             'share/' + package_name + '/config',
-            ['config/default.rviz',
-             'config/detect_balls.rviz', 
-             'config/tags.yaml',
-             ],
+            [
+                'config/detect_balls.rviz',
+                'config/tags.yaml',
+            ],
         ),
     ],
     install_requires=['setuptools'],

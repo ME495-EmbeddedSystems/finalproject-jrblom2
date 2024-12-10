@@ -1,19 +1,19 @@
-from tf2_ros import TransformBroadcaster
-from geometry_msgs.msg import Vector3
 import numpy as np
 
 import rclpy
+from rclpy.duration import Duration
 
-from tf2_ros import TransformException
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
+from geometry_msgs.msg import Pose, TransformStamped, Vector3
+
 from tf2_geometry_msgs import do_transform_pose
-from tf2_ros import TransformBroadcaster
+
+from tf2_ros import TransformBroadcaster, TransformException
+from tf2_ros.buffer import Buffer
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-from geometry_msgs.msg import TransformStamped
+from tf2_ros.transform_listener import TransformListener
+
 from tf_transformations import euler_from_quaternion
 
-from geometry_msgs.msg import Pose
 from poolinator.bridger import quaternion_from_euler
 
 
@@ -51,7 +51,8 @@ class World:
         self.tf_broadcaster = TransformBroadcaster(self.node)
         self.static_broadcaster = StaticTransformBroadcaster(self.node)
 
-        self.tf_buffer = Buffer()
+        cache_duration = Duration(seconds=1.0)
+        self.tf_buffer = Buffer(cache_time=cache_duration)
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
         self.cornerTagName = cornerTagName
@@ -104,7 +105,7 @@ class World:
 
             q = centerInBase.orientation
             q_list = [q.x, q.y, q.z, q.w]
-            roll, pitch, yaw = euler_from_quaternion(q_list)
+            _, _, yaw = euler_from_quaternion(q_list)
             tableOrientation = quaternion_from_euler(0.0, 0.0, yaw - np.pi / 2)
             t.transform.rotation = tableOrientation
 
