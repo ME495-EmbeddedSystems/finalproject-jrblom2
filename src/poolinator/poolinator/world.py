@@ -54,7 +54,7 @@ class World:
         self.static_broadcaster = StaticTransformBroadcaster(self.node)
 
         cache_duration = Duration(seconds=1.0)
-        self.tf_buffer = Buffer(cache_time=cache_duration)
+        self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
         self.cornerTagName = cornerTagName
@@ -227,7 +227,7 @@ class World:
                 )
                 ballDict[ball] = tf.transform.translation
             except TransformException:
-                self.node.get_logger().error(
+                self.node.get_logger().debug(
                     'Failed to get transform for a ball'
                 )
 

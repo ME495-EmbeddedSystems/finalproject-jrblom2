@@ -85,6 +85,7 @@ class ControlNode(Node):
             self.state = State.EXECUTING
 
             self.update_world()
+            self.logger.info(f'{self.ballDict.items()}')
             for key, value in self.ballDict.items():
                 if key == 'red_ball':
                     ball = value
@@ -136,7 +137,9 @@ class ControlNode(Node):
 
         # Standoff position
         eePose.position.z = 0.35
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        resultFuture = await self.mp_interface.mp.pathPlanPose(
+            eePose, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
         await resultFuture
 
         # Strike position
@@ -152,7 +155,7 @@ class ControlNode(Node):
         eePose.position.x = movement.position.x
         eePose.position.y = movement.position.y
         resultFuture = await self.mp_interface.mp.pathPlanPose(
-            eePose, startJoints=None, max_vel=0.7, max_accel=0.7
+            eePose, startJoints=None, max_vel=0.8, max_accel=0.8
         )
         await resultFuture
 
@@ -166,7 +169,9 @@ class ControlNode(Node):
         joints['fer_joint5'] = 0.0
         joints['fer_joint6'] = np.pi / 2
         joints['fer_joint7'] = np.pi / 4
-        resultFuture = await self.mp_interface.mp.pathPlanJoints(joints)
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(
+            joints, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
         await resultFuture
 
     def setup_scene(self):
