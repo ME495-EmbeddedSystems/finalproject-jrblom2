@@ -53,7 +53,11 @@ class ImageProcessNode(Node):
         )
 
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
+        
         self.pub_blueball = self.create_publisher(msg_Image, 'blue_ball', 10)
+        self.pub_yellowball = self.create_publisher(msg_Image, 'blue_ball', 10)
+
+
         self.pub_circles = self.create_publisher(msg_Image, 'circles', 10)
         self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
@@ -93,12 +97,12 @@ class ImageProcessNode(Node):
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        # self.color_names = ['black','yellow','purple']
-        # self.has_black_ball = False
-        # self.has_blue_ball = False
-        # self.has_red_ball = False
-
+        # red is cue ball
         self.blue_ball_dict = None
+        self.yellow_ball_dict = None
+
+        self.hsv_dict = {'blue': [[100, 150, 50], [140, 255, 255]],
+                         'yellow': [[[20, 100, 100]], [40, 255, 255]]} # TODO: NEED TO TEST. FLICKERING
 
     def broadcast_camera_to_redball(self):
         """_summary_"""
@@ -341,7 +345,9 @@ class ImageProcessNode(Node):
         self.detect_table(cv_image)
         self.detect_circles(cv_image)
         self.rgb_process_blue_ball(cv_image)
-        self.rgb_process_multiple_blue_balls(cv_image)
+        # self.rgb_process_multiple_blue_balls(cv_image)
+        for color in self.hsv_dict:
+            self.rgb_process_multiple_color_balls(cv_image, color)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
         
@@ -448,7 +454,49 @@ class ImageProcessNode(Node):
 
         self.pub_blueball.publish(new_msg)
 
-    def rgb_process_multiple_blue_balls(self, image):
+    # def rgb_process_multiple_blue_balls(self, image):
+    #     """_summary_
+
+    #     Args:
+    #         image (_type_): _description_
+    #     """
+    #     hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+
+    #     lower_blue = np.array([100, 150, 50])
+    #     upper_blue = np.array([140, 255, 255])
+
+
+    #     blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
+    
+    #     blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
+    #     new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
+
+    #     # Find the center of mass (centroid) of the ball
+    #     valid_contours = self.find_center_of_mass_multiple_contours(blue_ball_mask)
+
+    #     self.blue_ball_dict = {}
+    #     self.get_logger().info(f"self.depth_value: {self.depth_value}")
+
+    #     if valid_contours and self.depth_value:
+    #         for i in range(len(valid_contours)):
+    #             cx = valid_contours[i][1]
+    #             cy = valid_contours[i][2]
+
+    #             self.cx = cx
+    #             self.cy = cy
+    #             coords = self.pixel_to_world(cx, cy, self.depth_value)
+    #             if coords:
+    #                 ball_name = 'blue' + str(i)
+    #                 self.blue_ball_dict[ball_name] = {
+    #                     'x': coords[0],
+    #                     'y': coords[1],
+    #                     'z': coords[2],
+    #                 }
+    #     self.get_logger().info(f"blue ball dict len: {len(self.blue_ball_dict)}")
+    #     self.pub_blueball.publish(new_msg)
+
+
+    def rgb_process_multiple_color_balls(self, image, ball_color):
         """_summary_
 
         Args:
@@ -456,21 +504,21 @@ class ImageProcessNode(Node):
         """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
 
-        lower_blue = np.array([100, 150, 50])
-        upper_blue = np.array([140, 255, 255])
+        lower_hsv = self.hsv_dict[ball_color][0]
+        upper_hsv = self.hsv_dict[ball_color][1]
+        lower_hsv = np.array(lower_hsv)
+        upper_hsv = np.array(upper_hsv)
 
-
-        blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
+        ball_mask = cv.inRange(hsv_image, lower_hsv, upper_hsv)
     
-        blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
-        new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
+        color_ball = cv.bitwise_and(hsv_image, hsv_image, mask=ball_mask)
+        new_msg = self.bridge.cv2_to_imgmsg(color_ball, encoding='bgr8')
 
         # Find the center of mass (centroid) of the ball
-        valid_contours = self.find_center_of_mass_multiple_contours(blue_ball_mask)
+        valid_contours = self.find_center_of_mass_multiple_contours(ball_mask)
 
-        self.blue_ball_dict = {}
-        self.get_logger().info(f"self.depth_value: {self.depth_value}")
 
+        ball_dict = {}
         if valid_contours and self.depth_value:
             for i in range(len(valid_contours)):
                 cx = valid_contours[i][1]
@@ -480,14 +528,20 @@ class ImageProcessNode(Node):
                 self.cy = cy
                 coords = self.pixel_to_world(cx, cy, self.depth_value)
                 if coords:
-                    ball_name = 'blue' + str(i)
-                    self.blue_ball_dict[ball_name] = {
+                    ball_name = ball_color + str(i)
+                    ball_dict[ball_name] = {
                         'x': coords[0],
                         'y': coords[1],
                         'z': coords[2],
                     }
-        self.get_logger().info(f"blue ball dict len: {len(self.blue_ball_dict)}")
-        self.pub_blueball.publish(new_msg)
+        self.get_logger().info(f"{ball_color} ball dict len: {len(ball_dict)}")
+
+        if ball_color == 'blue':
+            self.blue_ball_dict = ball_dict
+            self.pub_blueball.publish(new_msg)
+        elif ball_color == 'yellow':
+            self.yellow_ball_dict = ball_dict
+            self.pub_yellowball.publish(new_msg)
 
     def rgb_process_ball_color(self, image, lower_hsv, upper_hsv, colorname):
         """_summary_
@@ -652,8 +706,8 @@ class ImageProcessNode(Node):
             self.broadcast_camera_to_redball()
         # if self.has_blue_ball:
         #     self.broadcast_camera_to_blueball()
-        if self.blue_ball_dict:
-            self.broadcast_camera_to_colorballs()
+        # if self.blue_ball_dict:
+        #     self.broadcast_camera_to_colorballs()
 
     def destroy_node(self):
         self.pipeline.stop()
