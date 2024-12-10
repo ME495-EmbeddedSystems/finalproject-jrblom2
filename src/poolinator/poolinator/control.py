@@ -35,25 +35,6 @@ class ControlNode(Node):
 
         timer_period = 1.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.move_c1 = self.create_service(
-            Empty, 'move_c1', self.move_c1_callback
-        )
-        self.move_c2 = self.create_service(
-            Empty, 'move_c2', self.move_c2_callback
-        )
-        self.move_c3 = self.create_service(
-            Empty, 'move_c3', self.move_c3_callback
-        )
-        self.move_c4 = self.create_service(
-            Empty, 'move_c4', self.move_c4_callback
-        )
-        self.center_strike = self.create_service(
-            Empty, 'center_strike', self.center_strike_callback
-        )
-
-        self.strike_redball = self.create_service(
-            Empty, 'strike_redball', self.strike_redball_callback
-        )
 
         self.strike_cue = self.create_service(
             Empty, 'strike_cue', self.strike_cue_callback
@@ -63,7 +44,7 @@ class ControlNode(Node):
         self.world = World(
             self,
             'table_tag',
-            ['red_ball'],
+            ['red_ball', 'blue0', 'blue1', 'blue2', 'blue3'],
         )
 
         self.state = State.SETUP
@@ -79,12 +60,16 @@ class ControlNode(Node):
                 self.world.buildTable()
             if self.world.tableExists():
                 self.setup_scene()
+                self.ballDict = self.world.ballPositions()
+                self.pockets = self.world.pocketPositions()
+                self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
                 self.state = State.STANDBY
                 return
 
         if self.state == State.STANDBY:
             self.ballDict = self.world.ballPositions()
             self.pockets = self.world.pocketPositions()
+            self.logger.info(f'{self.ballDict}')
 
         if self.state == State.LIVE:
             self.state = State.EXECUTING
@@ -94,12 +79,15 @@ class ControlNode(Node):
             for key, value in self.ballDict.items():
                 if key == 'red_ball':
                     ball = value
-            pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
 
-            eePose = pool_algo.test_strike_pose(ball, self.pockets[0])
+            eePose = self.pool_algo.calc_strike_pose(
+                ball, self.ballDict, self.pockets
+            )
+            # eePose = self.pool_algo.test_strike_pose(ball, self.pockets[4])
+
             await self.strike_ball(eePose)
 
-            # await self.stand_by()
+            await self.stand_by()
 
             self.state = State.STANDBY
 
@@ -109,151 +97,52 @@ class ControlNode(Node):
 
         return response
 
-    async def strike_redball_callback(self, request, response):
-        if self.pockets:
-            for key, value in self.ballDict.items():
-                if key == 'red_ball':
-                    ball = value
-            pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
-            eePose = pool_algo.test_strike_pose(ball, self.pockets[2])
-            self.get_logger().info(f'eePose: {eePose}')
-
-            await self.strike_ball(eePose)
-
-        return response
-
-    async def move_c1_callback(self, request, response):
-        pocket_pos = self.world.pocketPositions()
-        c1 = pocket_pos[0]
-        eePose = Pose()
-        eePosition = Point()
-        eePosition.x = c1.x
-        eePosition.y = c1.y
-        eePosition.z = c1.z + 0.2
-        eePose.position = eePosition
-        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
-        eePose.orientation = eeOrientation
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        self.logger.info('Move Done')
-        return response
-
-    async def move_c2_callback(self, request, response):
-        pocket_pos = self.world.pocketPositions()
-        c2 = pocket_pos[2]
-        eePose = Pose()
-        eePosition = Point()
-        eePosition.x = c2.x
-        eePosition.y = c2.y
-        eePosition.z = c2.z + 0.2
-        eePose.position = eePosition
-        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
-        eePose.orientation = eeOrientation
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        self.logger.info('Move Done')
-        return response
-
-    async def move_c3_callback(self, request, response):
-        pocket_pos = self.world.pocketPositions()
-        c3 = pocket_pos[3]
-        eePose = Pose()
-        eePosition = Point()
-        eePosition.x = c3.x
-        eePosition.y = c3.y
-        eePosition.z = c3.z + 0.2
-        eePose.position = eePosition
-        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
-        eePose.orientation = eeOrientation
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        self.logger.info('Move Done')
-        return response
-
-    async def move_c4_callback(self, request, response):
-        pocket_pos = self.world.pocketPositions()
-        c4 = pocket_pos[5]
-        eePose = Pose()
-        eePosition = Point()
-        eePosition.x = c4.x
-        eePosition.y = c4.y
-        eePosition.z = c4.z + 0.2
-        eePose.position = eePosition
-        eeOrientation = quaternion_from_euler(np.pi, 0, 0)
-        eePose.orientation = eeOrientation
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        self.logger.info('Move Done')
-        return response
-
-    async def center_strike_callback(self, request, response):
-        center_pos = self.world.center()
-        eePose = Pose()
-        eePosition = Point()
-        eePosition.x = center_pos.transform.translation.x - 0.15
-        eePosition.y = center_pos.transform.translation.y
-        eePosition.z = center_pos.transform.translation.z + 0.28
-        eePose.position = eePosition
-        # eePose.orientation = center_pos.transform.rotation
-        eeOrientation = quaternion_from_euler(np.pi, 0, -np.pi / 4)
-        eePose.orientation = eeOrientation
-
-        self.get_logger().info(f'eePose center strike: {eePose}')
-
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        eePose.position.z -= 0.11
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
-        eePose.position.x += 0.11
-        resultFuture = await self.mp_interface.mp.pathPlanPose(
-            eePose, startJoints=None, max_vel=0.4, max_accel=0.4
-        )
-        await resultFuture
-        return response
-
     async def strike_ball(self, que_pose):
         # Caroline, this is where we woulc call you function
         # Or pass it into function
         eePose = que_pose
 
         # Standoff position
-        eePose.position.z += 0.25
+        eePose.position.z = 0.35
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
 
-        eeMotion = Pose()
-        # Move along x axis of ee
-        eeMotion.position.x = -0.17
-        movement = self.world.strikeTransform(eeMotion)
-        eePose.position.x = movement.position.x
-        eePose.position.y = movement.position.y
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
-        await resultFuture
+        # eeMotion = Pose()
+        # # Move along x axis of ee
+        # eeMotion.position.x = -0.17
+        # movement = self.world.strikeTransform(eeMotion)
+        # eePose.position.x = movement.position.x
+        # eePose.position.y = movement.position.y
+        # resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        # await resultFuture
 
         # Strike position
-        eePose.position.z -= 0.11
+        eePose.position.z -= 0.09
         resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
         await resultFuture
 
         # Hit through
         eeMotion = Pose()
         # Move along x axis of ee
-        eeMotion.position.x = 0.06
+        eeMotion.position.x = 0.07
         movement = self.world.strikeTransform(eeMotion)
         eePose.position.x = movement.position.x
         eePose.position.y = movement.position.y
         resultFuture = await self.mp_interface.mp.pathPlanPose(
-            eePose, startJoints=None, max_vel=0.5, max_accel=0.5
+            eePose, startJoints=None, max_vel=0.7, max_accel=0.7
         )
         await resultFuture
 
     async def stand_by(self):
-        readyPose = Pose()
-        readyPose.position.x = 0.3
-        readyPose.position.z = 0.48
-        readyPose.orientation.x = 1.0
-        resultFuture = await self.mp_interface.mp.pathPlanPose(readyPose)
+        joints = {}
+        joints['fer_joint1'] = np.pi / 4
+        joints['fer_joint2'] = -np.pi / 4
+        joints['fer_joint3'] = 0.0
+        joints['fer_joint4'] = -3 * np.pi / 4
+        joints['fer_joint5'] = 0.0
+        joints['fer_joint6'] = np.pi / 2
+        joints['fer_joint7'] = np.pi / 4
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(joints)
         await resultFuture
 
     def setup_scene(self):

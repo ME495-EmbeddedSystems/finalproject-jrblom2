@@ -196,14 +196,16 @@ class World:
 
     def ballPositions(self):
         ballDict = {}
-        try:
-            for ball in self.ballNames:
+        for ball in self.ballNames:
+            try:
                 tf = self.tf_buffer.lookup_transform(
                     'base', ball, rclpy.time.Time()
                 )
                 ballDict[ball] = tf.transform.translation
-        except TransformException:
-            self.node.get_logger().error("Failed to get transform for balls")
+            except TransformException:
+                self.node.get_logger().error(
+                    "Failed to get transform for a ball"
+                )
 
         return ballDict
 
