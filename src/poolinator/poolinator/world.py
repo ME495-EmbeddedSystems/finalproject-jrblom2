@@ -1,11 +1,13 @@
 """Keeps track of the world configuration."""
 
+from geometry_msgs.msg import Pose, TransformStamped
+
 import numpy as np
+
+from poolinator.bridger import quaternion_from_euler
 
 import rclpy
 from rclpy.duration import Duration
-
-from geometry_msgs.msg import Pose, TransformStamped
 
 from tf2_geometry_msgs import do_transform_pose
 
@@ -15,8 +17,6 @@ from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros.transform_listener import TransformListener
 
 from tf_transformations import euler_from_quaternion
-
-from poolinator.bridger import quaternion_from_euler
 
 """
     F
@@ -41,7 +41,7 @@ class World:
     """Representation of world to be used in control."""
 
     def __init__(self, node, cornerTagName, ballTagNames):
-        """Setup the world.
+        """Set up the world.
 
         Args:
             node (Node): rclpy node object to do tf calls

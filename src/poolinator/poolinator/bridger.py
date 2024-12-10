@@ -1,16 +1,13 @@
-"""
-Establishes the link between the camera frame and the robot base frame.
-
-"""
+"""Establishes the link between the camera frame and the robot base frame."""
 
 import math
+
+from geometry_msgs.msg import Pose, Quaternion, TransformStamped
 
 import numpy as np
 
 import rclpy
 from rclpy.node import Node
-
-from geometry_msgs.msg import Pose, Quaternion, TransformStamped
 
 from tf2_geometry_msgs import do_transform_pose
 
@@ -59,7 +56,6 @@ class BridgeNode(Node):
 
     def __init__(self):
         """Initialize the node."""
-
         super().__init__('transform')
         timer_period = 5.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -75,7 +71,6 @@ class BridgeNode(Node):
 
     def broadcast_ferhand_to_cuetag(self):
         """Publish fixed offset from gripper to tag."""
-
         # Try until publish succeds, cant continue without this
         while True:
             try:
@@ -102,7 +97,6 @@ class BridgeNode(Node):
 
     def lookup_cuetag_to_camera(self):
         """Lookup the cue tag in camera frame and do transform."""
-
         # Store frame names in variables that will be used to
         # compute transformations
         from_frame_cam = 'camera_que_tag'
@@ -166,7 +160,7 @@ class BridgeNode(Node):
 
 
 def main():
-    """Main."""
+    """Run main."""
     rclpy.init()
     n = BridgeNode()
     rclpy.spin(n)
