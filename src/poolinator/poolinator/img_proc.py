@@ -93,6 +93,13 @@ class ImageProcessNode(Node):
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
+        # self.color_names = ['black','yellow','purple']
+        # self.has_black_ball = False
+        # self.has_blue_ball = False
+        # self.has_red_ball = False
+
+        self.blue_ball_dict = None
+
     def broadcast_camera_to_redball(self):
         """_summary_"""
         # Try until publish succeds, cant continue without this
@@ -307,6 +314,7 @@ class ImageProcessNode(Node):
         self.detect_table(cv_image)
         self.detect_circles(cv_image)
         self.rgb_process_blue_ball(cv_image)
+        self.rgb_process_multiple_blue_balls(cv_image)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
         
@@ -364,7 +372,6 @@ class ImageProcessNode(Node):
 
         self.pub_redball.publish(new_msg)
 
-    
     def rgb_process_blue_ball(self, image):
         """_summary_
 
@@ -384,6 +391,96 @@ class ImageProcessNode(Node):
 
         # Find the center of mass (centroid) of the ball
         cx, cy, largest_contour = self.find_center_of_mass(blue_ball_mask)
+
+        if largest_contour is not None:
+            area = cv.contourArea(largest_contour)
+
+            if area >= 150 and area <= 600:
+                self.get_logger().info(f"Blue ball contour area: {area}")
+                if cx and cy and self.depth_value:
+                    self.has_blue_ball = True
+                    coords = self.pixel_to_world(cx, cy, self.depth_value)
+                    if coords:
+                        self.blue_ball_x = coords[0]
+                        self.blue_ball_y = coords[1]
+                        self.blue_ball_z = coords[2]
+            else:
+                # Contour found but area not in range, treat as no ball
+                self.has_blue_ball = False
+                self.get_logger().info('No blue ball detected')
+                self.blue_ball_x = None
+                self.blue_ball_y = None
+                self.blue_ball_z = None
+        else:
+            # No contour found at all
+            self.has_blue_ball = False
+            self.get_logger().info('No blue ball detected')
+            self.blue_ball_x = None
+            self.blue_ball_y = None
+            self.blue_ball_z = None
+
+        self.pub_blueball.publish(new_msg)
+
+    def rgb_process_multiple_blue_balls(self, image):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+        """
+        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+
+        lower_blue = np.array([100, 150, 50])
+        upper_blue = np.array([140, 255, 255])
+
+
+        blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
+    
+        blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
+        new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
+
+        # Find the center of mass (centroid) of the ball
+        valid_contours = self.find_center_of_mass_multiple_contours(blue_ball_mask)
+
+        self.blue_ball_dict = {}
+        self.get_logger().info(f"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        self.get_logger().info(f"self.depth_value: {self.depth_value}")
+
+        if valid_contours and self.depth_value:
+            self.get_logger().info(f"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
+            for i in range(len(valid_contours)):
+                cx = valid_contours[i][1]
+                cy = valid_contours[i][2]
+                coords = self.pixel_to_world(cx, cy, self.depth_value)
+                if coords:
+                    ball_name = 'blue' + str(i)
+                    self.blue_ball_dict[ball_name] = {
+                        'x': coords[0],
+                        'y': coords[1],
+                        'z': coords[2],
+                    }
+        self.get_logger().info(f"blue ball dict len: {len(self.blue_ball_dict)}")
+        self.pub_blueball.publish(new_msg)
+
+    def rgb_process_ball_color(self, image, lower_hsv, upper_hsv, colorname):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+        """
+        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+
+        lower_hsv = np.array([100, 150, 50])
+        upper_hsv = np.array([140, 255, 255])
+
+
+        color_mask = cv.inRange(hsv_image, lower_hsv, upper_hsv)
+    
+        color_ball = cv.bitwise_and(hsv_image, hsv_image, mask=color_mask)
+        new_msg = self.bridge.cv2_to_imgmsg(color_ball, encoding='bgr8')
+
+        # Find the center of mass (centroid) of the ball
+        cx, cy, largest_contour = self.find_center_of_mass(color_mask)
 
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
@@ -463,7 +560,42 @@ class ImageProcessNode(Node):
                 
                 return cx, cy, largest_contour
         return None, None, None  # if no red ball is found
+    
+    def find_center_of_mass_multiple_contours(self, mask):
+        """_summary_
 
+        Args:
+            mask (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Find contours in the mask
+        contours, _ = cv.findContours(
+            mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+        )
+
+        valid_contours = []
+        if contours:
+            for con in contours:
+                area = cv.contourArea(con)
+                if area >= 150 and area <= 600: # Area big enough to be a ball
+                    self.get_logger().info(f"HAS VALID BLUE BALL AREA")
+
+                    # Calculate the moments of the largest contour
+                    M = cv.moments(con)
+
+                    # Ensure the moment is not zero (to avoid division by zero)
+                    if M["m00"] != 0:
+                        # Calculate the center of mass (cx, cy)
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                    
+                    valid_contours.append([con, cx, cy])
+            # self.get_logger().info(f"num valid cons {len(valid_contours)}")
+            return valid_contours
+        return None
+    
     def pixel_to_world(self, u, v, depth_value):
         """
         Convert pixel coordinates (u, v) and depth to world coordinates.
@@ -491,8 +623,8 @@ class ImageProcessNode(Node):
     def timer_callback(self):
         if self.has_red_ball:
             self.broadcast_camera_to_redball()
-        if self.has_blue_ball:
-            self.broadcast_camera_to_blueball()
+        # if self.has_blue_ball:
+        #     self.broadcast_camera_to_blueball()
 
     def destroy_node(self):
         self.pipeline.stop()
