@@ -154,14 +154,20 @@ class ImageProcessNode(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
-    def broadcast_camera_to_otherballs(self):
+    def broadcast_camera_to_otherballs(self, ball_color):
         """_summary_"""
         try:
-            if not self.circle_positions:
+            ball_dict = None
+            if ball_color == 'blue':
+                ball_dict = self.blue_ball_dict
+            elif ball_color == 'yellow':
+                ball_dict = self.yellow_ball_dict
+                
+            if ball_dict is None:
                 # self.get_logger().info("No balls detected.")
                 return
 
-            for key, value in self.circle_positions.items():
+            for key, value in ball_dict.items():
                 t = TransformStamped()
 
                 t.header.stamp = self.get_clock().now().to_msg()
@@ -708,6 +714,8 @@ class ImageProcessNode(Node):
         #     self.broadcast_camera_to_blueball()
         # if self.blue_ball_dict:
         #     self.broadcast_camera_to_colorballs()
+        for color in self.hsv_dict:
+            self.broadcast_camera_to_otherballs(color)
 
     def destroy_node(self):
         self.pipeline.stop()
@@ -720,9 +728,3 @@ def main():
     rclpy.spin(n)
     n.destroy_node()
     rclpy.shutdown()
-
-"""
-max 610
-min 150
-
-"""
