@@ -80,6 +80,10 @@ class ImageProcessNode(Node):
         self.blue_ball_y = None
         self.blue_ball_z = None
 
+        self.no_red_ball = False
+        self.no_blue_ball = False
+
+
         self.x_bound_green = None
         self.y_bound_green = None
         self.w_bound_green = None
@@ -93,7 +97,7 @@ class ImageProcessNode(Node):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
-            if self.red_ball_x is None:
+            if self.no_red_ball is None:
                 return
 
             t = TransformStamped()
@@ -118,7 +122,7 @@ class ImageProcessNode(Node):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
-            if self.blue_ball_x is None:
+            if self.no_blue_ball is None:
                 return
 
             t = TransformStamped()
@@ -231,13 +235,13 @@ class ImageProcessNode(Node):
                 self.w_bound_green = w_bound
                 self.h_bound_green = h_bound
 
-            cv.rectangle(
-                image,
-                (x_bound, y_bound),
-                (x_bound + w_bound, w_bound + h_bound),
-                (255, 0, 0),
-                2,
-            )
+            # cv.rectangle(
+            #     image,
+            #     (x_bound, y_bound),
+            #     (x_bound + w_bound, w_bound + h_bound),
+            #     (255, 0, 0),
+            #     2,
+            # )
 
             # Detect circles in the original image
             gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -321,12 +325,14 @@ class ImageProcessNode(Node):
 
         # Check if any red pixels detected
         if cx is None or cy is None:
+            self.no_red_ball = True
             self.get_logger().info('No red ball detected')
             self.red_ball_x = None
             self.red_ball_y = None
             self.red_ball_z = None
 
         else:
+            self.no_red_ball = False
             self.cx = cx
             self.cy = cy
 
@@ -361,10 +367,14 @@ class ImageProcessNode(Node):
         cx, cy = self.find_center_of_mass(blue_ball_mask)
 
         if cx is None or cy is None:
+            self.no_blue_ball = True
             self.get_logger().info('No blue ball detected')
             self.blue_ball_x = None
             self.blue_ball_y = None
             self.blue_ball_z = None
+        else:
+            self.no_red_ball = False
+
 
         if cx and cy and self.depth_value:
             coords = self.pixel_to_world(cx, cy, self.depth_value)
