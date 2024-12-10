@@ -198,7 +198,7 @@ class PoolAlgorithm:
         # Return appropriate values
         return possible, ee, strike_ang
 
-    def calc_cue_targ(self, cue_ball, balls, pockets):
+    def calc_cue_targ(self, cue_ball, pockets):
         """
         Calculates final target_ball and desired cue pose for the shot.
 
@@ -206,7 +206,7 @@ class PoolAlgorithm:
         ----
         cue_ball (Vector3):
             Position of the cue_ball
-        
+
         [pocket]:
             A list of every pocket on the table containing its x, y, z
             value (Vector3).
@@ -223,7 +223,7 @@ class PoolAlgorithm:
         N = len(pockets)
         # Check direct shot
         for key1, value1 in self.balls.items():
-            if key1 == "blue_ball":
+            if key1 == "red_ball":
                 continue
             for i in range(N):
                 possible, cue, strike_ang = self.calc_cue_pos(
