@@ -44,7 +44,7 @@ class ControlNode(Node):
         self.world = World(
             self,
             'table_tag',
-            ['red_ball', 'blue0', 'blue1', 'blue2'],
+            ['red_ball', 'blue0', 'blue1', 'blue2', 'blue3'],
         )
 
         self.state = State.SETUP
