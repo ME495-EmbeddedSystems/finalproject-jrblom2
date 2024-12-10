@@ -182,33 +182,6 @@ class ImageProcessNode(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to publish transform: {e}")
 
-    def broadcast_camera_to_colorballs(self):
-        """_summary_"""
-        try:
-            if not self.blue_ball_dict:
-                # self.get_logger().info("No balls detected.")
-                return
-
-            for key, value in self.blue_ball_dict.items():
-                t = TransformStamped()
-
-                t.header.stamp = self.get_clock().now().to_msg()
-                t.header.frame_id = 'camera_color_optical_frame'
-                t.child_frame_id = key
-
-                t.transform.translation.x = float(value['x'])
-                t.transform.translation.y = float(value['y'])
-                t.transform.translation.z = float(value['z'])
-
-                q = quaternion_from_euler(0, 0, 0)
-                t.transform.rotation = q
-
-                self.tf_broadcaster.sendTransform(t)
-
-        except Exception as e:
-            self.get_logger().error(f"Failed to publish transform: {e}")
-
-
     def imageDepthInfoCallback(self, cameraInfo):
         """_summary_
 
@@ -255,7 +228,6 @@ class ImageProcessNode(Node):
 
         self.detect_table(cv_image)
         self.rgb_process_blue_ball(cv_image)
-        # self.rgb_process_multiple_blue_balls(cv_image)
         for color in self.hsv_dict:
             self.rgb_process_multiple_color_balls(cv_image, color)
 
@@ -523,8 +495,6 @@ class ImageProcessNode(Node):
             self.broadcast_camera_to_redball()
         # if self.has_blue_ball:
         #     self.broadcast_camera_to_blueball()
-        # if self.blue_ball_dict:
-        #     self.broadcast_camera_to_colorballs()
         for color in self.hsv_dict:
             self.broadcast_camera_to_otherballs(color)
 
