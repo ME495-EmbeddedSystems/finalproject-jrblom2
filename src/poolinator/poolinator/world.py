@@ -225,7 +225,9 @@ class World:
                 tf = self.tf_buffer.lookup_transform(
                     'base', ball, rclpy.time.Time()
                 )
-                ballDict[ball] = tf.transform.translation
+                
+                if (self.node.get_clock().now().to_msg().secs - tf.header.stamp.secs <= 1):
+                    ballDict[ball] = tf.transform.translation
             except TransformException:
                 self.node.get_logger().debug(
                     'Failed to get transform for a ball'
