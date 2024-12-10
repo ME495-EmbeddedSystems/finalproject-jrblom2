@@ -79,12 +79,16 @@ class ControlNode(Node):
                 self.world.buildTable()
             if self.world.tableExists():
                 self.setup_scene()
+                self.ballDict = self.world.ballPositions()
+                self.pockets = self.world.pocketPositions()
+                self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
                 self.state = State.STANDBY
                 return
 
         if self.state == State.STANDBY:
             self.ballDict = self.world.ballPositions()
             self.pockets = self.world.pocketPositions()
+            self.logger.info(f'{self.ballDict}')
 
         if self.state == State.LIVE:
             self.state = State.EXECUTING
@@ -94,12 +98,15 @@ class ControlNode(Node):
             for key, value in self.ballDict.items():
                 if key == 'red_ball':
                     ball = value
-            pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
 
-            eePose = pool_algo.test_strike_pose(ball, self.pockets[0])
+            # eePose = self.pool_algo.calc_strike_pose(
+            #     ball, self.ballDict, self.pockets
+            # )
+            eePose = self.pool_algo.test_strike_pose(ball, self.pockets[4])
+
             await self.strike_ball(eePose)
 
-            # await self.stand_by()
+            await self.stand_by()
 
             self.state = State.STANDBY
 
@@ -249,11 +256,15 @@ class ControlNode(Node):
         await resultFuture
 
     async def stand_by(self):
-        readyPose = Pose()
-        readyPose.position.x = 0.3
-        readyPose.position.z = 0.48
-        readyPose.orientation.x = 1.0
-        resultFuture = await self.mp_interface.mp.pathPlanPose(readyPose)
+        joints = {}
+        joints['fer_joint1'] = 0.0
+        joints['fer_joint2'] = -np.pi / 4
+        joints['fer_joint3'] = 0.0
+        joints['fer_joint4'] = -3 * np.pi / 4
+        joints['fer_joint5'] = 0.0
+        joints['fer_joint6'] = np.pi / 2
+        joints['fer_joint7'] = np.pi / 4
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(joints)
         await resultFuture
 
     def setup_scene(self):
