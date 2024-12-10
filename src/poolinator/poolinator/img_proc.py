@@ -336,21 +336,11 @@ class ImageProcessNode(Node):
 
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
-            if area >= 100 and area <= 600: # Area big enough to be a ball
-                # Check if any red pixels detected
-                if cx is None or cy is None:
-                    self.has_red_ball = False
-                    self.get_logger().info('No red ball detected')
-                    self.red_ball_x = None
-                    self.red_ball_y = None
-                    self.red_ball_z = None
-                else:
-                    self.cx = cx
-                    self.cy = cy
-                    if largest_contour is not None:
-                        area = cv.contourArea(largest_contour)
-                        self.get_logger().info(f"Red ball contour area: {area}")
 
+            if area >= 150 and area <= 600: # Area big enough to be a ball
+                self.cx = cx
+                self.cy = cy
+                self.get_logger().info(f"Red ball contour area: {area}")
 
                 if cx and cy and self.depth_value:
                     self.has_red_ball = True
@@ -398,19 +388,8 @@ class ImageProcessNode(Node):
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
 
-            if area >= 100 and area <= 600:
-                if cx is None or cy is None:
-                    self.has_blue_ball = False
-                    self.get_logger().info('No blue ball detected')
-                    self.blue_ball_x = None
-                    self.blue_ball_y = None
-                    self.blue_ball_z = None
-                else:
-                    # Print the contour size for the blue ball
-                    if largest_contour is not None:
-                        area = cv.contourArea(largest_contour)
-                        self.get_logger().info(f"Blue ball contour area: {area}")
-
+            if area >= 150 and area <= 600:
+                self.get_logger().info(f"Blue ball contour area: {area}")
                 if cx and cy and self.depth_value:
                     self.has_blue_ball = True
                     coords = self.pixel_to_world(cx, cy, self.depth_value)
@@ -510,9 +489,10 @@ class ImageProcessNode(Node):
         return None
 
     def timer_callback(self):
-        self.broadcast_camera_to_redball()
-        self.broadcast_camera_to_blueball()
-        self.broadcast_camera_to_otherballs()
+        if self.has_red_ball:
+            self.broadcast_camera_to_redball()
+        if self.has_blue_ball:
+            self.broadcast_camera_to_blueball()
 
     def destroy_node(self):
         self.pipeline.stop()
