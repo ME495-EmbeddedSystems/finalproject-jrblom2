@@ -43,8 +43,7 @@ class ImageProcessNode(Node):
     def __init__(self):
         super().__init__('image_processor_colors')
         self.bridge = CvBridge()
-        self.create_subscription(
-            msg_Image, 'rgb_image', self.rgb_process, 10)
+        self.create_subscription(msg_Image, 'rgb_image', self.rgb_process, 10)
         self.create_subscription(
             msg_Image, 'depth_image', self.depth_process, 10
         )
@@ -53,9 +52,11 @@ class ImageProcessNode(Node):
         )
 
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
-        
+
         self.pub_blueball = self.create_publisher(msg_Image, 'blue_ball', 10)
-        self.pub_yellowball = self.create_publisher(msg_Image, 'blue_ball', 10)
+        self.pub_yellowball = self.create_publisher(
+            msg_Image, 'yellow_ball', 10
+        )
 
         self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
@@ -85,20 +86,16 @@ class ImageProcessNode(Node):
         self.has_red_ball = False
         self.has_blue_ball = False
 
-
-        self.x_bound_green = None
-        self.y_bound_green = None
-        self.w_bound_green = None
-        self.h_bound_green = None
-
         self.tf_broadcaster = TransformBroadcaster(self)
 
         # red is cue ball
         self.blue_ball_dict = None
         self.yellow_ball_dict = None
 
-        self.hsv_dict = {'blue': [[100, 150, 50], [140, 255, 255]],
-                         'yellow': [[[20, 100, 100]], [40, 255, 255]]} # TODO: NEED TO TEST. FLICKERING
+        self.hsv_dict = {
+            'blue': [[100, 150, 50], [140, 255, 255]],
+            'yellow': [[[20, 100, 100]], [40, 255, 255]],
+        }  # TODO: NEED TO TEST. FLICKERING
 
     def broadcast_camera_to_redball(self):
         """_summary_"""
@@ -158,7 +155,7 @@ class ImageProcessNode(Node):
                 ball_dict = self.blue_ball_dict
             elif ball_color == 'yellow':
                 ball_dict = self.yellow_ball_dict
-                
+
             if ball_dict is None:
                 # self.get_logger().info("No balls detected.")
                 return
@@ -232,7 +229,7 @@ class ImageProcessNode(Node):
             self.rgb_process_multiple_color_balls(cv_image, color)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
-        
+
         lower_red1 = np.array([0, 100, 100])
         upper_red1 = np.array([10, 255, 255])
         lower_red2 = np.array([160, 100, 100])
@@ -247,8 +244,8 @@ class ImageProcessNode(Node):
         # high_H = 29
         # high_S = 255
         # high_V = 255
-        # lower_red = np.array([low_H, low_S, low_V], dtype=np.uint8)  
-        # upper_red = np.array([high_H, high_S, high_V], dtype=np.uint8) 
+        # lower_red = np.array([low_H, low_S, low_V], dtype=np.uint8)
+        # upper_red = np.array([high_H, high_S, high_V], dtype=np.uint8)
         # red_ball_mask = cv.inRange(hsv_image, lower_red, upper_red)
 
         red_ball = cv.bitwise_and(hsv_image, hsv_image, mask=red_ball_mask)
@@ -260,7 +257,7 @@ class ImageProcessNode(Node):
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
 
-            if area >= 150 and area <= 600: # Area big enough to be a ball
+            if area >= 150 and area <= 600:  # Area big enough to be a ball
                 self.cx = cx
                 self.cy = cy
                 # self.get_logger().info(f"Red ball contour area: {area}")
@@ -274,13 +271,13 @@ class ImageProcessNode(Node):
                         self.red_ball_z = coords[2]
             else:
                 self.has_red_ball = False
-                self.get_logger().info('No red ball detected')
+                self.get_logger().debug('No red ball detected')
                 self.red_ball_x = None
                 self.red_ball_y = None
                 self.red_ball_z = None
         else:
             self.has_red_ball = False
-            self.get_logger().info('No red ball detected')
+            self.get_logger().debug('No red ball detected')
             self.red_ball_x = None
             self.red_ball_y = None
             self.red_ball_z = None
@@ -298,9 +295,8 @@ class ImageProcessNode(Node):
         lower_blue = np.array([100, 150, 50])
         upper_blue = np.array([140, 255, 255])
 
-
         blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
-    
+
         blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
         new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
 
@@ -322,14 +318,14 @@ class ImageProcessNode(Node):
             else:
                 # Contour found but area not in range, treat as no ball
                 self.has_blue_ball = False
-                self.get_logger().info('No blue ball detected')
+                self.get_logger().debug('No blue ball detected')
                 self.blue_ball_x = None
                 self.blue_ball_y = None
                 self.blue_ball_z = None
         else:
             # No contour found at all
             self.has_blue_ball = False
-            self.get_logger().info('No blue ball detected')
+            self.get_logger().debug('No blue ball detected')
             self.blue_ball_x = None
             self.blue_ball_y = None
             self.blue_ball_z = None
@@ -350,13 +346,12 @@ class ImageProcessNode(Node):
         upper_hsv = np.array(upper_hsv)
 
         ball_mask = cv.inRange(hsv_image, lower_hsv, upper_hsv)
-    
+
         color_ball = cv.bitwise_and(hsv_image, hsv_image, mask=ball_mask)
         new_msg = self.bridge.cv2_to_imgmsg(color_ball, encoding='bgr8')
 
         # Find the center of mass (centroid) of the ball
         valid_contours = self.find_center_of_mass_multiple_contours(ball_mask)
-
 
         ball_dict = {}
         if valid_contours and self.depth_value:
@@ -374,7 +369,9 @@ class ImageProcessNode(Node):
                         'y': coords[1],
                         'z': coords[2],
                     }
-        self.get_logger().info(f"{ball_color} ball dict len: {len(ball_dict)}")
+        self.get_logger().debug(
+            f"{ball_color} ball dict len: {len(ball_dict)}"
+        )
 
         if ball_color == 'blue':
             self.blue_ball_dict = ball_dict
@@ -429,10 +426,10 @@ class ImageProcessNode(Node):
                 # Calculate the center of mass (cx, cy)
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
-                
+
                 return cx, cy, largest_contour
         return None, None, None  # if no red ball is found
-    
+
     def find_center_of_mass_multiple_contours(self, mask):
         """_summary_
 
@@ -451,7 +448,7 @@ class ImageProcessNode(Node):
         if contours:
             for con in contours:
                 area = cv.contourArea(con)
-                if area >= 150 and area <= 600: # Area big enough to be a ball
+                if area >= 150 and area <= 600:  # Area big enough to be a ball
                     # Calculate the moments of the largest contour
                     M = cv.moments(con)
 
@@ -460,12 +457,12 @@ class ImageProcessNode(Node):
                         # Calculate the center of mass (cx, cy)
                         cx = int(M["m10"] / M["m00"])
                         cy = int(M["m01"] / M["m00"])
-                    
+
                     valid_contours.append([con, cx, cy])
-            # self.get_logger().info(f"num valid cons {len(valid_contours)}")
+            # self.get_logger().debug(f"num valid cons {len(valid_contours)}")
             return valid_contours
         return None
-    
+
     def pixel_to_world(self, u, v, depth_value):
         """
         Convert pixel coordinates (u, v) and depth to world coordinates.
