@@ -1,3 +1,12 @@
+"""
+Controls the arm to calculate and execute moves.
+
+SERVICES:
+  + strike_cue (std_srvs/srv/Empty) - Starts the game either from
+    startup or from a cue ball reset.
+
+"""
+
 from enum import Enum, auto
 
 import numpy as np
@@ -27,7 +36,11 @@ class State(Enum):
 
 
 class ControlNode(Node):
+    """Controls the robot through the pool game."""
+
     def __init__(self):
+        """Setup our state."""
+
         super().__init__('control')
         self.logger = self.get_logger()
 
@@ -52,6 +65,8 @@ class ControlNode(Node):
         self.pool_algo = None
 
     async def timer_callback(self):
+        """Main control loop for running or waiting."""
+
         # Stay in setup state until pool table frames exist from CV
         if self.state == State.SETUP:
             if self.world.tableTagExists():
@@ -63,9 +78,11 @@ class ControlNode(Node):
                 self.state = State.STANDBY
                 return
 
+        # Ready to act
         if self.state == State.STANDBY:
             self.update_world()
 
+        # In the movement loop
         if self.state == State.LIVE:
             self.state = State.EXECUTING
 
@@ -96,16 +113,29 @@ class ControlNode(Node):
             self.state = State.LIVE
 
     def update_world(self):
+        """Update the pockets and balls."""
+
         self.ballDict = self.world.ballPositions()
         self.pockets = self.world.pocketPositions()
 
     async def strike_cue_callback(self, request, response):
+        """Service to init robot from standby
+
+        Args:
+            request (Empty): Unused
+            response (Empty): Unused
+
+        Returns:
+            Empty: unused
+        """
         if self.state == State.STANDBY:
             self.state = State.LIVE
 
         return response
 
     async def strike_ball(self, que_pose):
+        """Run motions to strike ball given pose."""
+
         eePose = que_pose
 
         # Standoff position
@@ -131,6 +161,8 @@ class ControlNode(Node):
         await resultFuture
 
     async def stand_by(self):
+        """Return to standby position."""
+
         joints = {}
         joints['fer_joint1'] = np.pi / 4
         joints['fer_joint2'] = -np.pi / 4
@@ -143,6 +175,8 @@ class ControlNode(Node):
         await resultFuture
 
     def setup_scene(self):
+        """Build the planning scene in Rviz."""
+
         tableWidth = 2.0
         tableLength = 2.4
         tableHeight = 0.1
@@ -187,6 +221,8 @@ class ControlNode(Node):
 
 
 def main():
+    """The main function."""
+
     rclpy.init()
     n = ControlNode()
     rclpy.spin(n)

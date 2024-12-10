@@ -1,9 +1,11 @@
+"""Keeps track of the world configuration."""
+
 import numpy as np
 
 import rclpy
 from rclpy.duration import Duration
 
-from geometry_msgs.msg import Pose, TransformStamped, Vector3
+from geometry_msgs.msg import Pose, TransformStamped
 
 from tf2_geometry_msgs import do_transform_pose
 
@@ -15,15 +17,6 @@ from tf2_ros.transform_listener import TransformListener
 from tf_transformations import euler_from_quaternion
 
 from poolinator.bridger import quaternion_from_euler
-
-
-def midpoint(point1, point2):
-    mid = Vector3()
-    mid.x = (point1.x + point2.x) / 2
-    mid.y = (point1.y + point2.y) / 2
-    mid.z = (point1.z + point2.z) / 2
-    return mid
-
 
 """
     F
@@ -45,7 +38,16 @@ P6--P5--P4
 
 
 class World:
+    """Representation of world to be used in control."""
+
     def __init__(self, node, cornerTagName, ballTagNames):
+        """Setup the world.
+
+        Args:
+            node (Node): rclpy node object to do tf calls
+            cornerTagName (String): Name of corner april tag frame
+            ballTagNames (List[String]): List of ball tags to keep track of.
+        """
         self.node = node
 
         self.tf_broadcaster = TransformBroadcaster(self.node)
@@ -63,6 +65,11 @@ class World:
         self.tableHeight = 0.09
 
     def tableTagExists(self):
+        """Check if tag is visable.
+
+        Returns:
+            Bool: Is the tag visable relative to the base?
+        """
         try:
             self.tf_buffer.lookup_transform(
                 'base', self.cornerTagName, rclpy.time.Time()
@@ -73,6 +80,11 @@ class World:
             return False
 
     def tableExists(self):
+        """Check if table has been built.
+
+        Returns:
+            Bool: Has the table been built?
+        """
         try:
             self.tf_buffer.lookup_transform(
                 'base', 'table_center', rclpy.time.Time()
@@ -83,6 +95,7 @@ class World:
             return False
 
     def buildTable(self):
+        """Construct the table relashonships to base."""
         try:
             baseToCornerTag = self.tf_buffer.lookup_transform(
                 'base', self.cornerTagName, rclpy.time.Time()
@@ -147,9 +160,14 @@ class World:
             self.static_broadcaster.sendTransform(p)
 
         except TransformException:
-            self.node.get_logger().error("Failed to build table")
+            self.node.get_logger().error('Failed to build table')
 
     def pocketPositions(self):
+        """Get list of pocket positions.
+
+        Returns:
+            List: List of points representing pockets in base frame
+        """
         pocketPos = []
         try:
             p1 = self.tf_buffer.lookup_transform(
@@ -192,10 +210,15 @@ class World:
             return pocketPos
 
         except TransformException:
-            self.node.get_logger().error("Failed to get transform for pockets")
+            self.node.get_logger().error('Failed to get transform for pockets')
             return pocketPos
 
     def ballPositions(self):
+        """Get current positions of tracked balls.
+
+        Returns:
+            Dict: Dict of ball names to points in base frame
+        """
         ballDict = {}
         for ball in self.ballNames:
             try:
@@ -205,12 +228,17 @@ class World:
                 ballDict[ball] = tf.transform.translation
             except TransformException:
                 self.node.get_logger().error(
-                    "Failed to get transform for a ball"
+                    'Failed to get transform for a ball'
                 )
 
         return ballDict
 
     def center(self):
+        """Get center of table.
+
+        Returns:
+            Transform: tf representing center of table
+        """
         try:
             tf = self.tf_buffer.lookup_transform(
                 'base', 'table_center', rclpy.time.Time()
@@ -218,9 +246,17 @@ class World:
             return tf
 
         except TransformException:
-            self.node.get_logger().error("Failed to get transform for center")
+            self.node.get_logger().error('Failed to get transform for center')
 
     def strikeTransform(self, eeMotion):
+        """Get ee motion in base frame.
+
+        Args:
+            eeMotion (Pose): desired ee motion
+
+        Returns:
+            Pose: same Pose, but in base frame.
+        """
         try:
             tf = self.tf_buffer.lookup_transform(
                 'base', 'fer_hand_tcp', rclpy.time.Time()
@@ -230,15 +266,20 @@ class World:
 
         except TransformException:
             self.node.get_logger().error(
-                "Failed to get transform for eeMotion"
+                'Failed to get transform for eeMotion'
             )
 
     def cameraPosition(self):
+        """Get position of camera in base frame.
+
+        Returns:
+            Pose: Pose of camera in base frame
+        """
         try:
             tf = self.tf_buffer.lookup_transform(
                 'base', 'camera_link', rclpy.time.Time()
             )
             return tf.transform.translation
         except TransformException:
-            self.node.get_logger().error("Failed to get transform for balls")
+            self.node.get_logger().error('Failed to get transform for balls')
             return None

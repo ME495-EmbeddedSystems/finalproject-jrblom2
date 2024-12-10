@@ -1,3 +1,8 @@
+"""
+Establishes the link between the camera frame and the robot base frame.
+
+"""
+
 import math
 
 import numpy as np
@@ -16,6 +21,16 @@ from tf2_ros.transform_listener import TransformListener
 
 
 def quaternion_from_euler(ai, aj, ak):
+    """Compute a quaternion from Euler angles.
+
+    Args:
+        ai (float): x
+        aj (float): y
+        ak (float): z
+
+    Returns:
+        q: the Quaternion representation
+    """
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
@@ -40,12 +55,11 @@ def quaternion_from_euler(ai, aj, ak):
 
 
 class BridgeNode(Node):
-    """
-    Node that ...
-
-    """
+    """Node that computes camera in base frame."""
 
     def __init__(self):
+        """Initialize the node."""
+
         super().__init__('transform')
         timer_period = 5.0  # secs
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -60,6 +74,8 @@ class BridgeNode(Node):
         self.hasCameraPosition = False
 
     def broadcast_ferhand_to_cuetag(self):
+        """Publish fixed offset from gripper to tag."""
+
         # Try until publish succeds, cant continue without this
         while True:
             try:
@@ -78,13 +94,15 @@ class BridgeNode(Node):
 
                 self.static_broadcaster.sendTransform(t)
                 self.get_logger().debug(
-                    f"Transform from {t.header.frame_id} to {t.child_frame_id}"
+                    f'Transform from {t.header.frame_id} to {t.child_frame_id}'
                 )
                 return
             except Exception as e:
-                self.get_logger().error(f"Failed to publish transform: {e}")
+                self.get_logger().error(f'Failed to publish transform: {e}')
 
     def lookup_cuetag_to_camera(self):
+        """Lookup the cue tag in camera frame and do transform."""
+
         # Store frame names in variables that will be used to
         # compute transformations
         from_frame_cam = 'camera_que_tag'
@@ -141,12 +159,14 @@ class BridgeNode(Node):
             )
 
     def timer_callback(self):
+        """Set up the transform calls."""
         if not self.hasCameraPosition:
             self.broadcast_ferhand_to_cuetag()
             self.lookup_cuetag_to_camera()
 
 
 def main():
+    """Main."""
     rclpy.init()
     n = BridgeNode()
     rclpy.spin(n)
