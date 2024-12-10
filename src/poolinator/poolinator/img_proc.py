@@ -291,7 +291,7 @@ class ImageProcessNode(Node):
             if area >= 150 and area <= 600: # Area big enough to be a ball
                 self.cx = cx
                 self.cy = cy
-                self.get_logger().info(f"Red ball contour area: {area}")
+                # self.get_logger().info(f"Red ball contour area: {area}")
 
                 if cx and cy and self.depth_value:
                     self.has_red_ball = True
@@ -339,7 +339,7 @@ class ImageProcessNode(Node):
             area = cv.contourArea(largest_contour)
 
             if area >= 150 and area <= 600:
-                self.get_logger().info(f"Blue ball contour area: {area}")
+                # self.get_logger().info(f"Blue ball contour area: {area}")
                 if cx and cy and self.depth_value:
                     self.has_blue_ball = True
                     coords = self.pixel_to_world(cx, cy, self.depth_value)
@@ -529,8 +529,6 @@ class ImageProcessNode(Node):
             for con in contours:
                 area = cv.contourArea(con)
                 if area >= 150 and area <= 600: # Area big enough to be a ball
-                    self.get_logger().info(f"HAS VALID BLUE BALL AREA")
-
                     # Calculate the moments of the largest contour
                     M = cv.moments(con)
 
