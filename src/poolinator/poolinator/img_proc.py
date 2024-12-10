@@ -57,8 +57,6 @@ class ImageProcessNode(Node):
         self.pub_blueball = self.create_publisher(msg_Image, 'blue_ball', 10)
         self.pub_yellowball = self.create_publisher(msg_Image, 'blue_ball', 10)
 
-
-        self.pub_circles = self.create_publisher(msg_Image, 'circles', 10)
         self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
         timer_period = 0.05  # secs
@@ -92,8 +90,6 @@ class ImageProcessNode(Node):
         self.y_bound_green = None
         self.w_bound_green = None
         self.h_bound_green = None
-
-        self.circle_positions = None
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -248,97 +244,6 @@ class ImageProcessNode(Node):
         new_msg = self.bridge.cv2_to_imgmsg(green_table, encoding='bgr8')
         self.pub_table.publish(new_msg)
 
-    def detect_circles(self, image):
-        """_summary_
-
-        Args:
-            image (_type_): _description_
-        """
-        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
-        # Isolate green surface
-        lower_green = np.array([35, 50, 50])
-        upper_green = np.array([85, 255, 255])
-        green_mask = cv.inRange(hsv_image, lower_green, upper_green)
-
-        # Find the largest green contour
-        contours, _ = cv.findContours(
-            green_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
-        )
-        if contours:
-            largest_contour = max(contours, key=cv.contourArea)
-
-            # Get the bounding rectangle
-            x_bound, y_bound, w_bound, h_bound = cv.boundingRect(
-                largest_contour
-            )
-
-            if x_bound:
-                self.x_bound_green = x_bound
-                self.y_bound_green = y_bound
-                self.w_bound_green = w_bound
-                self.h_bound_green = h_bound
-
-            # cv.rectangle(
-            #     image,
-            #     (x_bound, y_bound),
-            #     (x_bound + w_bound, w_bound + h_bound),
-            #     (255, 0, 0),
-            #     2,
-            # )
-
-            # Detect circles in the original image
-            gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-            gray_blurred = cv.blur(gray, (3, 3))
-
-            minradius_in_px = 12
-            maxradius_in_px = 14
-            circles = cv.HoughCircles(
-                gray_blurred,
-                cv.HOUGH_GRADIENT,
-                dp=1.1,
-                minDist=minradius_in_px / 2,
-                param1=150,
-                param2=17,
-                minRadius=minradius_in_px,
-                maxRadius=maxradius_in_px,
-            )
-
-            # Initialize the circle_positions dictionary
-            self.circle_positions = {}
-
-            # Filter circles within the bounding rectangle
-            if circles is not None:
-                circles = np.uint16(np.around(circles))
-                for idx, pt in enumerate(circles[0, :]):
-                    a, b, r = pt[0], pt[1], pt[2]
-
-                    # Check if the circle's center is within the bounding rectangle
-                    if (
-                        x_bound <= a <= x_bound + w_bound
-                        and y_bound <= b <= y_bound + h_bound
-                    ):
-                        cv.circle(image, (a, b), r, (0, 255, 0), 2)
-                        cv.circle(image, (a, b), 1, (0, 0, 255), 3)
-
-                        # Get depth value at the circle center
-                        if self.intrinsics and self.depth_value:
-                            coords = self.pixel_to_world(
-                                a, b, self.depth_value
-                            )
-
-                            if coords:
-                                ball_name = 'ball' + str(idx)
-                                self.circle_positions[ball_name] = {
-                                    'x': coords[0],
-                                    'y': coords[1],
-                                    'z': coords[2],
-                                }
-            # self.get_logger().info(f"Number of balls detected: {len(self.circle_positions)}")
-
-        new_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
-        self.pub_circles.publish(new_msg)
-
     def rgb_process(self, image):
         """_summary_
 
@@ -349,7 +254,6 @@ class ImageProcessNode(Node):
         self.rgb_image_height, self.rgb_image_width, _ = cv_image.shape
 
         self.detect_table(cv_image)
-        self.detect_circles(cv_image)
         self.rgb_process_blue_ball(cv_image)
         # self.rgb_process_multiple_blue_balls(cv_image)
         for color in self.hsv_dict:
@@ -459,48 +363,6 @@ class ImageProcessNode(Node):
             self.blue_ball_z = None
 
         self.pub_blueball.publish(new_msg)
-
-    # def rgb_process_multiple_blue_balls(self, image):
-    #     """_summary_
-
-    #     Args:
-    #         image (_type_): _description_
-    #     """
-    #     hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
-    #     lower_blue = np.array([100, 150, 50])
-    #     upper_blue = np.array([140, 255, 255])
-
-
-    #     blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
-    
-    #     blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
-    #     new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
-
-    #     # Find the center of mass (centroid) of the ball
-    #     valid_contours = self.find_center_of_mass_multiple_contours(blue_ball_mask)
-
-    #     self.blue_ball_dict = {}
-    #     self.get_logger().info(f"self.depth_value: {self.depth_value}")
-
-    #     if valid_contours and self.depth_value:
-    #         for i in range(len(valid_contours)):
-    #             cx = valid_contours[i][1]
-    #             cy = valid_contours[i][2]
-
-    #             self.cx = cx
-    #             self.cy = cy
-    #             coords = self.pixel_to_world(cx, cy, self.depth_value)
-    #             if coords:
-    #                 ball_name = 'blue' + str(i)
-    #                 self.blue_ball_dict[ball_name] = {
-    #                     'x': coords[0],
-    #                     'y': coords[1],
-    #                     'z': coords[2],
-    #                 }
-    #     self.get_logger().info(f"blue ball dict len: {len(self.blue_ball_dict)}")
-    #     self.pub_blueball.publish(new_msg)
-
 
     def rgb_process_multiple_color_balls(self, image, ball_color):
         """_summary_
