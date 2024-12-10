@@ -80,8 +80,8 @@ class ImageProcessNode(Node):
         self.blue_ball_y = None
         self.blue_ball_z = None
 
-        self.no_red_ball = False
-        self.no_blue_ball = False
+        self.has_red_ball = False
+        self.has_blue_ball = False
 
 
         self.x_bound_green = None
@@ -97,7 +97,7 @@ class ImageProcessNode(Node):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
-            if self.no_red_ball is None:
+            if not self.has_red_ball:
                 return
 
             t = TransformStamped()
@@ -122,7 +122,7 @@ class ImageProcessNode(Node):
         """_summary_"""
         # Try until publish succeds, cant continue without this
         try:
-            if self.no_blue_ball is None:
+            if not self.has_blue_ball:
                 return
 
             t = TransformStamped()
@@ -309,7 +309,7 @@ class ImageProcessNode(Node):
         self.rgb_process_blue_ball(cv_image)
 
         hsv_image = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
-
+        
         lower_red1 = np.array([0, 100, 100])
         upper_red1 = np.array([10, 255, 255])
         lower_red2 = np.array([160, 100, 100])
@@ -317,31 +317,60 @@ class ImageProcessNode(Node):
         mask1 = cv.inRange(hsv_image, lower_red1, upper_red1)
         mask2 = cv.inRange(hsv_image, lower_red2, upper_red2)
         red_ball_mask = cv.bitwise_or(mask1, mask2)
+
+        # low_H = 0
+        # low_S = 180
+        # low_V = 0
+        # high_H = 29
+        # high_S = 255
+        # high_V = 255
+        # lower_red = np.array([low_H, low_S, low_V], dtype=np.uint8)  
+        # upper_red = np.array([high_H, high_S, high_V], dtype=np.uint8) 
+        # red_ball_mask = cv.inRange(hsv_image, lower_red, upper_red)
+
         red_ball = cv.bitwise_and(hsv_image, hsv_image, mask=red_ball_mask)
         new_msg = self.bridge.cv2_to_imgmsg(red_ball, encoding='bgr8')
 
         # Find the center of mass (centroid) of the red ball
-        cx, cy = self.find_center_of_mass(red_ball_mask)
+        cx, cy, largest_contour = self.find_center_of_mass(red_ball_mask)
 
-        # Check if any red pixels detected
-        if cx is None or cy is None:
-            self.no_red_ball = True
+        if largest_contour is not None:
+            area = cv.contourArea(largest_contour)
+            if area >= 100 and area <= 600: # Area big enough to be a ball
+                # Check if any red pixels detected
+                if cx is None or cy is None:
+                    self.has_red_ball = False
+                    self.get_logger().info('No red ball detected')
+                    self.red_ball_x = None
+                    self.red_ball_y = None
+                    self.red_ball_z = None
+                else:
+                    self.cx = cx
+                    self.cy = cy
+                    if largest_contour is not None:
+                        area = cv.contourArea(largest_contour)
+                        self.get_logger().info(f"Red ball contour area: {area}")
+
+
+                if cx and cy and self.depth_value:
+                    self.has_red_ball = True
+                    coords = self.pixel_to_world(cx, cy, self.depth_value)
+                    if coords:
+                        self.red_ball_x = coords[0]
+                        self.red_ball_y = coords[1]
+                        self.red_ball_z = coords[2]
+            else:
+                self.has_red_ball = False
+                self.get_logger().info('No red ball detected')
+                self.red_ball_x = None
+                self.red_ball_y = None
+                self.red_ball_z = None
+        else:
+            self.has_red_ball = False
             self.get_logger().info('No red ball detected')
             self.red_ball_x = None
             self.red_ball_y = None
             self.red_ball_z = None
-
-        else:
-            self.no_red_ball = False
-            self.cx = cx
-            self.cy = cy
-
-        if cx and cy and self.depth_value:
-            coords = self.pixel_to_world(cx, cy, self.depth_value)
-            if coords:
-                self.red_ball_x = coords[0]
-                self.red_ball_y = coords[1]
-                self.red_ball_z = coords[2]
 
         self.pub_redball.publish(new_msg)
 
@@ -354,7 +383,7 @@ class ImageProcessNode(Node):
         """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
 
-        lower_blue = np.array([100,150,50])
+        lower_blue = np.array([100, 150, 50])
         upper_blue = np.array([140, 255, 255])
 
 
@@ -364,24 +393,45 @@ class ImageProcessNode(Node):
         new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
 
         # Find the center of mass (centroid) of the ball
-        cx, cy = self.find_center_of_mass(blue_ball_mask)
+        cx, cy, largest_contour = self.find_center_of_mass(blue_ball_mask)
 
-        if cx is None or cy is None:
-            self.no_blue_ball = True
+        if largest_contour is not None:
+            area = cv.contourArea(largest_contour)
+
+            if area >= 100 and area <= 600:
+                if cx is None or cy is None:
+                    self.has_blue_ball = False
+                    self.get_logger().info('No blue ball detected')
+                    self.blue_ball_x = None
+                    self.blue_ball_y = None
+                    self.blue_ball_z = None
+                else:
+                    # Print the contour size for the blue ball
+                    if largest_contour is not None:
+                        area = cv.contourArea(largest_contour)
+                        self.get_logger().info(f"Blue ball contour area: {area}")
+
+                if cx and cy and self.depth_value:
+                    self.has_blue_ball = True
+                    coords = self.pixel_to_world(cx, cy, self.depth_value)
+                    if coords:
+                        self.blue_ball_x = coords[0]
+                        self.blue_ball_y = coords[1]
+                        self.blue_ball_z = coords[2]
+            else:
+                # Contour found but area not in range, treat as no ball
+                self.has_blue_ball = False
+                self.get_logger().info('No blue ball detected')
+                self.blue_ball_x = None
+                self.blue_ball_y = None
+                self.blue_ball_z = None
+        else:
+            # No contour found at all
+            self.has_blue_ball = False
             self.get_logger().info('No blue ball detected')
             self.blue_ball_x = None
             self.blue_ball_y = None
             self.blue_ball_z = None
-        else:
-            self.no_red_ball = False
-
-
-        if cx and cy and self.depth_value:
-            coords = self.pixel_to_world(cx, cy, self.depth_value)
-            if coords:
-                self.blue_ball_x = coords[0]
-                self.blue_ball_y = coords[1]
-                self.blue_ball_z = coords[2]
 
         self.pub_blueball.publish(new_msg)
 
@@ -432,8 +482,8 @@ class ImageProcessNode(Node):
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
                 
-                return cx, cy
-        return None, None  # if no red ball is found
+                return cx, cy, largest_contour
+        return None, None, None  # if no red ball is found
 
     def pixel_to_world(self, u, v, depth_value):
         """
@@ -475,3 +525,9 @@ def main():
     rclpy.spin(n)
     n.destroy_node()
     rclpy.shutdown()
+
+"""
+max 610
+min 150
+
+"""
