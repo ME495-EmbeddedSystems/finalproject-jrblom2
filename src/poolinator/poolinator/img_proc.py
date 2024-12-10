@@ -79,12 +79,7 @@ class ImageProcessNode(Node):
         self.red_ball_y = None
         self.red_ball_z = None
 
-        self.blue_ball_x = None
-        self.blue_ball_y = None
-        self.blue_ball_z = None
-
         self.has_red_ball = False
-        self.has_blue_ball = False
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -95,7 +90,7 @@ class ImageProcessNode(Node):
         self.hsv_dict = {
             'blue': [[100, 150, 50], [140, 255, 255]],
             'yellow': [[[20, 100, 100]], [40, 255, 255]],
-        }  # TODO: NEED TO TEST. FLICKERING
+        }  # TODO: REMOVE YELLOW
 
     def broadcast_camera_to_redball(self):
         """_summary_"""
@@ -113,31 +108,6 @@ class ImageProcessNode(Node):
             t.transform.translation.x = float(self.red_ball_x)
             t.transform.translation.y = float(self.red_ball_y)
             t.transform.translation.z = float(self.red_ball_z)
-
-            q = quaternion_from_euler(0, 0, 0)
-            t.transform.rotation = q
-
-            self.tf_broadcaster.sendTransform(t)
-            return
-        except Exception as e:
-            self.get_logger().error(f"Failed to publish transform: {e}")
-
-    def broadcast_camera_to_blueball(self):
-        """_summary_"""
-        # Try until publish succeds, cant continue without this
-        try:
-            if not self.has_blue_ball:
-                return
-
-            t = TransformStamped()
-
-            t.header.stamp = self.get_clock().now().to_msg()
-            t.header.frame_id = 'camera_color_optical_frame'
-            t.child_frame_id = 'blue_ball'
-
-            t.transform.translation.x = float(self.blue_ball_x)
-            t.transform.translation.y = float(self.blue_ball_y)
-            t.transform.translation.z = float(self.blue_ball_z)
 
             q = quaternion_from_euler(0, 0, 0)
             t.transform.rotation = q
@@ -214,6 +184,13 @@ class ImageProcessNode(Node):
         new_msg = self.bridge.cv2_to_imgmsg(green_table, encoding='bgr8')
         self.pub_table.publish(new_msg)
 
+    def reset_redball(self):
+        self.has_red_ball = False
+        self.get_logger().debug('No red ball detected')
+        self.red_ball_x = None
+        self.red_ball_y = None
+        self.red_ball_z = None
+
     def rgb_process(self, image):
         """_summary_
 
@@ -224,7 +201,6 @@ class ImageProcessNode(Node):
         self.rgb_image_height, self.rgb_image_width, _ = cv_image.shape
 
         self.detect_table(cv_image)
-        self.rgb_process_blue_ball(cv_image)
         for color in self.hsv_dict:
             self.rgb_process_multiple_color_balls(cv_image, color)
 
@@ -238,16 +214,6 @@ class ImageProcessNode(Node):
         mask2 = cv.inRange(hsv_image, lower_red2, upper_red2)
         red_ball_mask = cv.bitwise_or(mask1, mask2)
 
-        # low_H = 0
-        # low_S = 180
-        # low_V = 0
-        # high_H = 29
-        # high_S = 255
-        # high_V = 255
-        # lower_red = np.array([low_H, low_S, low_V], dtype=np.uint8)
-        # upper_red = np.array([high_H, high_S, high_V], dtype=np.uint8)
-        # red_ball_mask = cv.inRange(hsv_image, lower_red, upper_red)
-
         red_ball = cv.bitwise_and(hsv_image, hsv_image, mask=red_ball_mask)
         new_msg = self.bridge.cv2_to_imgmsg(red_ball, encoding='bgr8')
 
@@ -257,7 +223,7 @@ class ImageProcessNode(Node):
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
 
-            if area >= 150 and area <= 600:  # Area big enough to be a ball
+            if area >= 200 and area <= 600:  # Area big enough to be a ball
                 self.cx = cx
                 self.cy = cy
                 # self.get_logger().info(f"Red ball contour area: {area}")
@@ -270,67 +236,11 @@ class ImageProcessNode(Node):
                         self.red_ball_y = coords[1]
                         self.red_ball_z = coords[2]
             else:
-                self.has_red_ball = False
-                self.get_logger().debug('No red ball detected')
-                self.red_ball_x = None
-                self.red_ball_y = None
-                self.red_ball_z = None
+                self.reset_redball()
         else:
-            self.has_red_ball = False
-            self.get_logger().debug('No red ball detected')
-            self.red_ball_x = None
-            self.red_ball_y = None
-            self.red_ball_z = None
+            self.reset_redball()
 
         self.pub_redball.publish(new_msg)
-
-    def rgb_process_blue_ball(self, image):
-        """_summary_
-
-        Args:
-            image (_type_): _description_
-        """
-        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
-        lower_blue = np.array([100, 150, 50])
-        upper_blue = np.array([140, 255, 255])
-
-        blue_ball_mask = cv.inRange(hsv_image, lower_blue, upper_blue)
-
-        blue_ball = cv.bitwise_and(hsv_image, hsv_image, mask=blue_ball_mask)
-        new_msg = self.bridge.cv2_to_imgmsg(blue_ball, encoding='bgr8')
-
-        # Find the center of mass (centroid) of the ball
-        cx, cy, largest_contour = self.find_center_of_mass(blue_ball_mask)
-
-        if largest_contour is not None:
-            area = cv.contourArea(largest_contour)
-
-            if area >= 150 and area <= 600:
-                # self.get_logger().info(f"Blue ball contour area: {area}")
-                if cx and cy and self.depth_value:
-                    self.has_blue_ball = True
-                    coords = self.pixel_to_world(cx, cy, self.depth_value)
-                    if coords:
-                        self.blue_ball_x = coords[0]
-                        self.blue_ball_y = coords[1]
-                        self.blue_ball_z = coords[2]
-            else:
-                # Contour found but area not in range, treat as no ball
-                self.has_blue_ball = False
-                self.get_logger().debug('No blue ball detected')
-                self.blue_ball_x = None
-                self.blue_ball_y = None
-                self.blue_ball_z = None
-        else:
-            # No contour found at all
-            self.has_blue_ball = False
-            self.get_logger().debug('No blue ball detected')
-            self.blue_ball_x = None
-            self.blue_ball_y = None
-            self.blue_ball_z = None
-
-        self.pub_blueball.publish(new_msg)
 
     def rgb_process_multiple_color_balls(self, image, ball_color):
         """_summary_
@@ -448,7 +358,7 @@ class ImageProcessNode(Node):
         if contours:
             for con in contours:
                 area = cv.contourArea(con)
-                if area >= 150 and area <= 600:  # Area big enough to be a ball
+                if area >= 200 and area <= 600:  # Area big enough to be a ball
                     # Calculate the moments of the largest contour
                     M = cv.moments(con)
 
@@ -490,8 +400,6 @@ class ImageProcessNode(Node):
     def timer_callback(self):
         if self.has_red_ball:
             self.broadcast_camera_to_redball()
-        # if self.has_blue_ball:
-        #     self.broadcast_camera_to_blueball()
         for color in self.hsv_dict:
             self.broadcast_camera_to_otherballs(color)
 
