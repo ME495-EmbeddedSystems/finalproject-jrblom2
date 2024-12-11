@@ -234,7 +234,7 @@ class PoolAlgorithm:
             Position of the cue stick.
         strike_ang(float):
             Rotation about the z axis at that point # If only cue ball left, send to pocket 1
-                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[0])
+                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[2])
                     return ee, strike_ang, key1
         target_name(string):
             Name of the target ball
