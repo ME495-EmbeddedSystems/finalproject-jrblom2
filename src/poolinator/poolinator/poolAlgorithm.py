@@ -252,11 +252,19 @@ class PoolAlgorithm:
                 continue
 
             for i in range(N):
-                possible, cue, strike_ang = self.calc_cue_pos(
+                possible, ee, strike_ang = self.calc_cue_pos(
                     cue_ball, value1, pockets[i]
                 )
                 if possible:
-                    return cue, strike_ang, key1
+                    return ee, strike_ang, key1
+        
+        # No possible shot, so just aim for first ball in list to move balls
+        for key2, value2 in self.balls.items():
+            if key2 == "red_ball":
+                continue
+            else:
+                ee, strike_ang = self.sink_cue_ball(cue_ball, value2)
+                return ee, strike_ang, key2
 
     def calc_strike_pose(self, cue_ball, balls, pockets, ee_list=None):
         """
@@ -289,10 +297,3 @@ class PoolAlgorithm:
         q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
         eePose.orientation = q
         return eePose
-
-    def break_balls(self):
-        """
-        If no possible direct shot, break cluster of balls.
-
-        """
-        pass
