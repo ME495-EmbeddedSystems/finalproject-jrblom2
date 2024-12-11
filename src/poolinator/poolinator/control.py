@@ -231,7 +231,7 @@ class ControlNode(Node):
         poolTableWidth = 0.31
         poolTableLength = 0.51
         # make it a little shorter than real to not be too restrictive
-        poolTableHeight = 0.08
+        poolTableHeight = 0.085
 
         posePoolTable = Pose()
         poolTableTf = self.world.center()

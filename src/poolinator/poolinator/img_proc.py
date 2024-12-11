@@ -223,7 +223,7 @@ class ImageProcessNode(Node):
         if largest_contour is not None:
             area = cv.contourArea(largest_contour)
 
-            if area >= 200 and area <= 600:  # Area big enough to be a ball
+            if area >= 100 and area <= 800:  # Area big enough to be a ball
                 self.cx = cx
                 self.cy = cy
                 # self.get_logger().info(f"Red ball contour area: {area}")
@@ -358,7 +358,7 @@ class ImageProcessNode(Node):
         if contours:
             for con in contours:
                 area = cv.contourArea(con)
-                if area >= 200 and area <= 600:  # Area big enough to be a ball
+                if area >= 100 and area <= 800:  # Area big enough to be a ball
                     # Calculate the moments of the largest contour
                     M = cv.moments(con)
 
@@ -392,7 +392,7 @@ class ImageProcessNode(Node):
             # Convert pixel (u, v) and depth to world coordinates
             z = depth_value * self.depth_scale  # Convert depth to meters
             x = ((u - cx) * z / fx) + 0.008
-            y = ((v - cy) * z / fy) - 0.008
+            y = ((v - cy) * z / fy) - 0.004
 
             return [x, y, z]
         return None
