@@ -169,11 +169,11 @@ class World:
         """
         pocketPos = []
         try:
-            p1 = self.tf_buffer.lookup_transform(
-                'base', 'pocket4', rclpy.time.Time()
-            )
-            p1Translation = p1.transform.translation
-            pocketPos.append(p1Translation)
+            # p1 = self.tf_buffer.lookup_transform(
+            #     'base', 'pocket4', rclpy.time.Time()
+            # )
+            # p1Translation = p1.transform.translation
+            # pocketPos.append(p1Translation)
 
             p2 = self.tf_buffer.lookup_transform(
                 'base', 'pocket5', rclpy.time.Time()
@@ -181,29 +181,29 @@ class World:
             p2Translation = p2.transform.translation
             pocketPos.append(p2Translation)
 
-            p3 = self.tf_buffer.lookup_transform(
-                'base', 'pocket6', rclpy.time.Time()
-            )
-            p3Translation = p3.transform.translation
-            pocketPos.append(p3Translation)
+            # p3 = self.tf_buffer.lookup_transform(
+            #     'base', 'pocket6', rclpy.time.Time()
+            # )
+            # p3Translation = p3.transform.translation
+            # pocketPos.append(p3Translation)
 
-            p4 = self.tf_buffer.lookup_transform(
-                'base', 'pocket1', rclpy.time.Time()
-            )
-            p4Translation = p4.transform.translation
-            pocketPos.append(p4Translation)
+            # p4 = self.tf_buffer.lookup_transform(
+            #     'base', 'pocket1', rclpy.time.Time()
+            # )
+            # p4Translation = p4.transform.translation
+            # pocketPos.append(p4Translation)
 
-            p5 = self.tf_buffer.lookup_transform(
-                'base', 'pocket2', rclpy.time.Time()
-            )
-            p5Translation = p5.transform.translation
-            pocketPos.append(p5Translation)
+            # p5 = self.tf_buffer.lookup_transform(
+            #     'base', 'pocket2', rclpy.time.Time()
+            # )
+            # p5Translation = p5.transform.translation
+            # pocketPos.append(p5Translation)
 
-            p6 = self.tf_buffer.lookup_transform(
-                'base', 'pocket3', rclpy.time.Time()
-            )
-            p6Translation = p6.transform.translation
-            pocketPos.append(p6Translation)
+            # p6 = self.tf_buffer.lookup_transform(
+            #     'base', 'pocket3', rclpy.time.Time()
+            # )
+            # p6Translation = p6.transform.translation
+            # pocketPos.append(p6Translation)
 
             self.lastPockets = pocketPos
             return pocketPos
@@ -266,6 +266,13 @@ class World:
             tf = self.tf_buffer.lookup_transform(
                 'base', 'fer_hand_tcp', rclpy.time.Time()
             )
+            # self.node.get_logger().info("tf:")
+            # self.node.get_logger().info(f"{tf}")
+            # self.node.get_logger().info("yaw:")
+            # q = tf.transform.rotation
+            # q_list = [q.x, q.y, q.z, q.w]
+            # _, _, yaw = euler_from_quaternion(q_list)
+            # self.node.get_logger().info(f"{yaw}")
             eeMotionInBase = do_transform_pose(eeMotion, tf)
             return eeMotionInBase
 

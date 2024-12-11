@@ -72,12 +72,15 @@ class ControlNode(Node):
             if self.world.tableExists():
                 self.setup_scene()
                 self.update_world()
-                self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
+                self.pool_algo = PoolAlgorithm(
+                    self.ballDict, self.pockets, self.logger
+                )
                 self.state = State.STANDBY
                 return
 
         # Ready to act
         if self.state == State.STANDBY:
+            self.logger.info('Standing By.')
             self.update_world()
 
         # In the movement loop
@@ -92,12 +95,14 @@ class ControlNode(Node):
 
             # If done, go home
             if len(self.ballDict.items()) == 0:
+                self.logger.info('No balls, game done.')
                 await self.reset()
                 self.state = State.STANDBY
                 return
 
             # If no cue, standby
             if ball is None:
+                self.logger.info('No cue, please reset.')
                 self.state = State.STANDBY
                 return
 
@@ -106,6 +111,7 @@ class ControlNode(Node):
                 ball, self.ballDict, self.pockets
             )
 
+            self.logger.info('Striking.')
             await self.strike_ball(eePose)
 
             await self.stand_by()
