@@ -69,7 +69,7 @@ class PoolAlgorithm:
         self.D_ball = 0.0258  # diameter of pool balls (meters)
         self.D_stick = 0.037  # diameter of pool stick (meters)
         self.d = (
-            0.17  # distance from target shot and end-effector frame (meters)
+            0.12  # distance from target shot and end-effector frame (meters)
         )
 
         self.cue_ball_pos = None
