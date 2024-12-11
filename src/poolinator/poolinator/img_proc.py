@@ -391,8 +391,8 @@ class ImageProcessNode(Node):
 
             # Convert pixel (u, v) and depth to world coordinates
             z = depth_value * self.depth_scale  # Convert depth to meters
-            x = (u - cx) * z / fx
-            y = (v - cy) * z / fy
+            x = ((u - cx) * z / fx) + 0.008
+            y = ((v - cy) * z / fy) - 0.008
 
             return [x, y, z]
         return None

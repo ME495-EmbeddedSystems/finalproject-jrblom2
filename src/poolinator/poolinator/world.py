@@ -53,8 +53,7 @@ class World:
         self.tf_broadcaster = TransformBroadcaster(self.node)
         self.static_broadcaster = StaticTransformBroadcaster(self.node)
 
-        cache_duration = Duration(seconds=1.0)
-        self.tf_buffer = Buffer(cache_time=cache_duration)
+        self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
         self.cornerTagName = cornerTagName
@@ -171,37 +170,37 @@ class World:
         pocketPos = []
         try:
             p1 = self.tf_buffer.lookup_transform(
-                'base', 'pocket1', rclpy.time.Time()
+                'base', 'pocket4', rclpy.time.Time()
             )
             p1Translation = p1.transform.translation
             pocketPos.append(p1Translation)
 
             p2 = self.tf_buffer.lookup_transform(
-                'base', 'pocket2', rclpy.time.Time()
+                'base', 'pocket5', rclpy.time.Time()
             )
             p2Translation = p2.transform.translation
             pocketPos.append(p2Translation)
 
             p3 = self.tf_buffer.lookup_transform(
-                'base', 'pocket3', rclpy.time.Time()
+                'base', 'pocket6', rclpy.time.Time()
             )
             p3Translation = p3.transform.translation
             pocketPos.append(p3Translation)
 
             p4 = self.tf_buffer.lookup_transform(
-                'base', 'pocket4', rclpy.time.Time()
+                'base', 'pocket1', rclpy.time.Time()
             )
             p4Translation = p4.transform.translation
             pocketPos.append(p4Translation)
 
             p5 = self.tf_buffer.lookup_transform(
-                'base', 'pocket5', rclpy.time.Time()
+                'base', 'pocket2', rclpy.time.Time()
             )
             p5Translation = p5.transform.translation
             pocketPos.append(p5Translation)
 
             p6 = self.tf_buffer.lookup_transform(
-                'base', 'pocket6', rclpy.time.Time()
+                'base', 'pocket3', rclpy.time.Time()
             )
             p6Translation = p6.transform.translation
             pocketPos.append(p6Translation)
@@ -225,9 +224,15 @@ class World:
                 tf = self.tf_buffer.lookup_transform(
                     'base', ball, rclpy.time.Time()
                 )
-                ballDict[ball] = tf.transform.translation
+
+                if (
+                    self.node.get_clock().now().to_msg().sec
+                    - tf.header.stamp.sec
+                    <= 1
+                ):
+                    ballDict[ball] = tf.transform.translation
             except TransformException:
-                self.node.get_logger().error(
+                self.node.get_logger().debug(
                     'Failed to get transform for a ball'
                 )
 

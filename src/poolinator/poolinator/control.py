@@ -72,12 +72,15 @@ class ControlNode(Node):
             if self.world.tableExists():
                 self.setup_scene()
                 self.update_world()
-                self.pool_algo = PoolAlgorithm(self.ballDict, self.pockets)
+                self.pool_algo = PoolAlgorithm(
+                    self.ballDict, self.pockets, self.logger
+                )
                 self.state = State.STANDBY
                 return
 
         # Ready to act
         if self.state == State.STANDBY:
+            self.logger.info('Standing By.')
             self.update_world()
 
         # In the movement loop
@@ -85,12 +88,21 @@ class ControlNode(Node):
             self.state = State.EXECUTING
 
             self.update_world()
+            ball = None
             for key, value in self.ballDict.items():
                 if key == 'red_ball':
                     ball = value
 
+            # If done, go home
+            if len(self.ballDict.items()) == 0:
+                self.logger.info('No balls, game done.')
+                await self.reset()
+                self.state = State.STANDBY
+                return
+
             # If no cue, standby
             if ball is None:
+                self.logger.info('No cue, please reset.')
                 self.state = State.STANDBY
                 return
 
@@ -99,6 +111,7 @@ class ControlNode(Node):
                 ball, self.ballDict, self.pockets
             )
 
+            self.logger.info('Striking.')
             await self.strike_ball(eePose)
 
             await self.stand_by()
@@ -136,12 +149,14 @@ class ControlNode(Node):
 
         # Standoff position
         eePose.position.z = 0.35
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        resultFuture = await self.mp_interface.mp.pathPlanPose(
+            eePose, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
         await resultFuture
 
         # Strike position
         eePose.position.z -= 0.09
-        resultFuture = await self.mp_interface.mp.pathPlanPose(eePose)
+        resultFuture = await self.mp_interface.mp.cartesianPath(eePose)
         await resultFuture
 
         # Hit through
@@ -151,8 +166,8 @@ class ControlNode(Node):
         movement = self.world.strikeTransform(eeMotion)
         eePose.position.x = movement.position.x
         eePose.position.y = movement.position.y
-        resultFuture = await self.mp_interface.mp.pathPlanPose(
-            eePose, startJoints=None, max_vel=0.7, max_accel=0.7
+        resultFuture = await self.mp_interface.mp.cartesianPath(
+            eePose, startJoints=None, max_vel=0.8, max_accel=0.8
         )
         await resultFuture
 
@@ -166,7 +181,24 @@ class ControlNode(Node):
         joints['fer_joint5'] = 0.0
         joints['fer_joint6'] = np.pi / 2
         joints['fer_joint7'] = np.pi / 4
-        resultFuture = await self.mp_interface.mp.pathPlanJoints(joints)
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(
+            joints, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
+        await resultFuture
+
+    async def reset(self):
+        """Return to reset position."""
+        joints = {}
+        joints['fer_joint1'] = 0.0
+        joints['fer_joint2'] = -np.pi / 4
+        joints['fer_joint3'] = 0.0
+        joints['fer_joint4'] = -3 * np.pi / 4
+        joints['fer_joint5'] = 0.0
+        joints['fer_joint6'] = np.pi / 2
+        joints['fer_joint7'] = np.pi / 4
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(
+            joints, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
         await resultFuture
 
     def setup_scene(self):

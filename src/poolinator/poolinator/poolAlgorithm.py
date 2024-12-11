@@ -40,7 +40,7 @@ def calc_ang(ball_1, ball_2):
 class PoolAlgorithm:
     """A class to plan shots in pool."""
 
-    def __init__(self, balls, pockets):
+    def __init__(self, balls, pockets, logger):
         """
         Initialize the state of the pool balls on the table.
 
@@ -63,12 +63,13 @@ class PoolAlgorithm:
             point on the cue ball in the base frame.
 
         """
+        self.logger = logger
         self.balls = balls
         self.pockets = pockets
         self.D_ball = 0.0258  # diameter of pool balls (meters)
         self.D_stick = 0.037  # diameter of pool stick (meters)
         self.d = (
-            0.17  # distance from target shot and end-effector frame (meters)
+            0.12  # distance from target shot and end-effector frame (meters)
         )
 
         self.cue_ball_pos = None
@@ -168,8 +169,8 @@ class PoolAlgorithm:
         # Calculate final position of cue ball at impact
         pocket_ang = calc_ang(target_ball, impact)
         cf = Vector3()
-        cf.x = target_ball.x + self.D_ball * math.cos(pocket_ang)
-        cf.y = target_ball.y + self.D_ball * math.sin(pocket_ang)
+        cf.x = target_ball.x - self.D_ball * math.cos(pocket_ang)
+        cf.y = target_ball.y - self.D_ball * math.sin(pocket_ang)
         cf.z = cue_ball.z
 
         # Check if cue ball can go to final position without obstruction
@@ -180,11 +181,11 @@ class PoolAlgorithm:
 
         # Calculate striking angle
         strike_ang = calc_ang(cue_ball, cf)
-        sharpness = abs(
-            pocket_ang - strike_ang
-        )  # check that angle of shot is reasonable
-        # if sharpness >= math.radians(45.0):
-        #     return possible, neutral_cue, strike_ang
+
+        sharpness = abs(pocket_ang - strike_ang)
+        # check that angle of shot is reasonable
+        if sharpness >= math.radians(45.0):
+            return possible, neutral_cue, strike_ang
 
         ee = Point()
         ee.x = cue_ball.x - self.d * math.cos(strike_ang)
@@ -196,7 +197,23 @@ class PoolAlgorithm:
 
         possible = True
         # Return appropriate values
+
         return possible, ee, strike_ang
+
+    def sink_cue_ball(self, ball, impact):
+        """
+        Test function for a single ball.
+        Impact is the x, y, z vector3 point for the pocket or point on the wall.
+        """
+
+        # Calculate striking angle
+        strike_ang = calc_ang(ball, impact)
+        ee = Point()
+        ee.x = ball.x - self.d * math.cos(strike_ang)
+        ee.y = ball.y - self.d * math.sin(strike_ang)
+        ee.z = ball.z
+
+        return ee, strike_ang
 
     def calc_cue_targ(self, cue_ball, pockets):
         """
@@ -216,23 +233,40 @@ class PoolAlgorithm:
         cue(Point):
             Position of the cue stick.
         strike_ang(float):
-            Rotation about the z axis at that point
+            Rotation about the z axis at that point # If only cue ball left, send to pocket 1
+                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[0])
+                    return ee, strike_ang, key1
         target_name(string):
             Name of the target ball
         """
         N = len(pockets)
+
         # Check direct shot
         for key1, value1 in self.balls.items():
             if key1 == "red_ball":
+                # Check if it is the last shot
+                if len(self.balls) == 1:
+                    # If only cue ball left, send to pocket 1
+                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[0])
+                    return ee, strike_ang, key1
                 continue
+
             for i in range(N):
-                possible, cue, strike_ang = self.calc_cue_pos(
+                possible, ee, strike_ang = self.calc_cue_pos(
                     cue_ball, value1, pockets[i]
                 )
                 if possible:
-                    return cue, strike_ang, key1
+                    return ee, strike_ang, key1
+        
+        # No possible shot, so just aim for first ball in list to move balls
+        for key2, value2 in self.balls.items():
+            if key2 == "red_ball":
+                continue
+            else:
+                ee, strike_ang = self.sink_cue_ball(cue_ball, value2)
+                return ee, strike_ang, key2
 
-    def calc_strike_pose(self, cue_ball, balls, pockets):
+    def calc_strike_pose(self, cue_ball, balls, pockets, ee_list=None):
         """
         Calculates end-effector pose in the base frame for the desired
         shot.
@@ -248,6 +282,9 @@ class PoolAlgorithm:
         [pocket]:
             A list of every pocket on the table containing its x, y, z
             value (Vector3).
+        [ee_list]:
+            A list of previously tried end-effector positions that resulted
+            in a singularity or joint limit.
 
         Returns
         -------
@@ -260,29 +297,3 @@ class PoolAlgorithm:
         q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
         eePose.orientation = q
         return eePose
-
-    def test_strike_pose(self, ball, impact):
-        """
-        Test function for a single ball.
-        Impact is the x, y, z vector3 point for the pocket or point on the wall.
-        """
-
-        # Calculate striking angle
-        strike_ang = calc_ang(ball, impact)
-        ee = Point()
-        ee.x = ball.x
-        ee.y = ball.y
-        ee.z = ball.z
-
-        q = quaternion_from_euler(np.pi, 0.0, float(strike_ang) - np.pi / 4)
-        eePose = Pose()
-        eePose.position = ee
-        eePose.orientation = q
-        return eePose
-
-    def break_balls(self):
-        """
-        If no possible direct shot, break cluster of balls.
-
-        """
-        pass
