@@ -181,11 +181,11 @@ class PoolAlgorithm:
 
         # Calculate striking angle
         strike_ang = calc_ang(cue_ball, cf)
-        sharpness = abs(
-            pocket_ang - strike_ang
-        )  # check that angle of shot is reasonable
-        # if sharpness >= math.radians(45.0):
-        #     return possible, neutral_cue, strike_ang
+
+        sharpness = abs(pocket_ang - strike_ang)
+        # check that angle of shot is reasonable
+        if sharpness >= math.radians(45.0):
+            return possible, neutral_cue, strike_ang
 
         ee = Point()
         ee.x = cue_ball.x - self.d * math.cos(strike_ang)
@@ -197,25 +197,6 @@ class PoolAlgorithm:
 
         possible = True
         # Return appropriate values
-        # self.logger.info("data dump: ")
-        # self.logger.info("cue: ")
-        # self.logger.info(f'{cue_ball}')
-        # self.logger.info("target: ")
-        # self.logger.info(f'{target_ball}')
-        # self.logger.info("impact: ")
-        # self.logger.info(f'{impact}')
-        # self.logger.info("pocket ang: ")
-        # self.logger.info(f'{pocket_ang}')
-        # self.logger.info("strike ang: ")
-        # self.logger.info(f'{strike_ang}')
-        # self.logger.info("cf: ")
-        # self.logger.info(f'{cf}')
-        # self.logger.info("ee: ")
-        # self.logger.info(f'{ee}')
-        # self.logger.info("x: ")
-        # self.logger.info(f'{self.d * math.cos(strike_ang)}')
-        # self.logger.info("y: ")
-        # self.logger.info(f'{self.d * math.sin(strike_ang)}')
 
         return possible, ee, strike_ang
 
