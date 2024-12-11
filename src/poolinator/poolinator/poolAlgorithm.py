@@ -161,10 +161,10 @@ class PoolAlgorithm:
         neutral_cue.z = 0.0
 
         # Check if target ball can go to impact point
-        # if self.check_obstacle(target_ball, impact, self.D_ball):
-        #     # If true, there is an obstacle, so return false and
-        #     # next two values don't matter
-        #     return possible, neutral_cue, strike_ang
+        if self.check_obstacle(target_ball, impact, self.D_ball):
+            # If true, there is an obstacle, so return false and
+            # next two values don't matter
+            return possible, neutral_cue, strike_ang
 
         # Calculate final position of cue ball at impact
         pocket_ang = calc_ang(target_ball, impact)
@@ -174,10 +174,10 @@ class PoolAlgorithm:
         cf.z = cue_ball.z
 
         # Check if cue ball can go to final position without obstruction
-        # if self.check_obstacle(
-        #     cue_ball, cf, self.D_ball, target_ball
-        # ):
-        #     return possible, neutral_cue, strike_ang
+        if self.check_obstacle(
+            cue_ball, cf, self.D_ball, target_ball
+        ):
+            return possible, neutral_cue, strike_ang
 
         # Calculate striking angle
         strike_ang = calc_ang(cue_ball, cf)
@@ -192,8 +192,8 @@ class PoolAlgorithm:
         ee.y = cue_ball.y - self.d * math.sin(strike_ang)
         ee.z = cue_ball.z
 
-        # if self.check_obstacle(ee, cue_ball, self.D_stick):
-        #     return possible, neutral_cue, strike_ang
+        if self.check_obstacle(ee, cue_ball, self.D_stick):
+            return possible, neutral_cue, strike_ang
 
         possible = True
         # Return appropriate values
