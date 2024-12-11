@@ -247,7 +247,7 @@ class PoolAlgorithm:
                 # Check if it is the last shot
                 if len(self.balls) == 1:
                     # If only cue ball left, send to pocket 1
-                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[0])
+                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[2])
                     return ee, strike_ang, key1
                 continue
 
