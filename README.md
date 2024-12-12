@@ -14,7 +14,7 @@ Authors: An Nguyen, Caroline Terryn, Catherine Maglione, Joseph Blom, Logan Bosw
 ### Example Game:
 [poolinator.mp4](https://github.com/user-attachments/assets/c430b572-f40c-46c5-9905-023ac7beba72)
 
-### Rviz Window:
+### Example Rviz Window:
 [poolinator_rviz.webm](https://github.com/user-attachments/assets/b7c43b19-c84e-4187-915d-9dea66f87472)
 
 ## Contributing
