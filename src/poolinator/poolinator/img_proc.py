@@ -1,22 +1,23 @@
-import rclpy
-from rclpy.node import Node
-import cv2 as cv
-
-from sensor_msgs.msg import Image as msg_Image
-from sensor_msgs.msg import CameraInfo
-from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import pyrealsense2 as rs2
+import cv2 as cv
+from rclpy.node import Node
+import rclpy
+
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import Image as msg_Image
+
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
+from poolinator.bridger import quaternion_from_euler
 
 if not hasattr(rs2, 'intrinsics'):
     import pyrealsense2.pyrealsense2 as rs2
 
-from tf2_ros import TransformBroadcaster
-from geometry_msgs.msg import TransformStamped
-from poolinator.bridger import quaternion_from_euler
 
-
-"""
+'''
 -y
 |
 |
@@ -24,12 +25,12 @@ from poolinator.bridger import quaternion_from_euler
 |
 |
 +y
-"""
+'''
 
 
 class ImageProcessNode(Node):
     """
-    Node that subscribes to RGB and depth images, processes them using OpenCV, and publishes annotated images. 
+    Node that subscribes to RGB and depth images, processes them using OpenCV, and publishes annotated images.
 
     Publishers
     ----------
@@ -48,9 +49,7 @@ class ImageProcessNode(Node):
         The depth image corresponding to the RGB image.
     color_camera_info (sensor_msgs/msg/CameraInfo):
         Intrinsic camera parameters used to compute object positions in 3D space.
-
     """
-
     def __init__(self):
         super().__init__('image_processor_colors')
         self.bridge = CvBridge()
@@ -63,9 +62,7 @@ class ImageProcessNode(Node):
         )
 
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
-
         self.pub_blueball = self.create_publisher(msg_Image, 'blue_ball', 10)
-
         self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
         timer_period = 0.05  # secs
@@ -100,12 +97,15 @@ class ImageProcessNode(Node):
 
     def broadcast_camera_to_redball(self):
         """
-        Broadcast the transform from the camera's frame to the detected red ball frame.
+        Broadcast the transform from the camera's frame to the detected red 
+        ball frame.
 
-        Raises:
-            Exception: Logs an error message if the transform cannot be published.
+        Raises
+        ------
+        Exception:
+            Logs an error message if the transform cannot be published.
         """
-        # Try until publish succeds, cant continue without this
+        # Try until publish succeeds, cannot continue without this
         try:
             if not self.has_red_ball:
                 return
@@ -124,20 +124,24 @@ class ImageProcessNode(Node):
             t.transform.rotation = q
 
             self.tf_broadcaster.sendTransform(t)
-            return
         except Exception as e:
-            self.get_logger().error(f"Failed to publish transform: {e}")
+            self.get_logger().error(f'Failed to publish transform: {e}')
 
     def broadcast_camera_to_otherballs(self, ball_color):
         """
-        Broadcast transforms from the camera's frame to frames of all detected balls of a given color.
+        Broadcast transforms from camera's frame to frames of detected balls.
 
-        Args:
-            ball_color (str): The color of the balls whose transforms should be broadcast. 
-                            For example, "blue".
+        
+        Parameters
+        ----------
+        ball_color : str
+            The color of the balls whose transforms should be broadcast 
+            (e.g., 'blue').
 
-        Raises:
-            Exception: Logs an error message if the transforms cannot be published.
+        Raises
+        ------
+        Exception:
+            Logs an error message if the transforms cannot be published.
         """
         try:
             ball_dict = None
@@ -145,7 +149,6 @@ class ImageProcessNode(Node):
                 ball_dict = self.blue_ball_dict
 
             if ball_dict is None:
-                # self.get_logger().info("No balls detected.")
                 return
 
             for key, value in ball_dict.items():
@@ -163,22 +166,26 @@ class ImageProcessNode(Node):
                 t.transform.rotation = q
 
                 self.tf_broadcaster.sendTransform(t)
-
         except Exception as e:
-            self.get_logger().error(f"Failed to publish transform: {e}")
+            self.get_logger().error(f'Failed to publish transform: {e}')
 
     def imageDepthInfoCallback(self, cameraInfo):
         """
-        Callback to handle camera intrinsic parameters from a CameraInfo message.
+        Handle camera intrinsic parameters from a CameraInfo message.
 
-        This method initializes the camera intrinsics if they have not already been set. 
+        This method initializes the camera intrinsics if they have not already 
+        been set.
 
-        Args:
-            cameraInfo (sensor_msgs.msg.CameraInfo): 
-                The CameraInfo message containing the intrinsic parameters of the camera.
+        Args
+        ----
+        cameraInfo (sensor_msgs.msg.CameraInfo): 
+            The CameraInfo message containing the intrinsic parameters of the 
+            camera.
 
-        Raises:
-            CvBridgeError: If an error occurs during processing of the CameraInfo message, 
+        Raises
+        ------
+        CvBridgeError: 
+            If an error occurs during processing of the CameraInfo message, 
             logs the error and returns without action.
         """
         try:
@@ -207,14 +214,21 @@ class ImageProcessNode(Node):
 
     def rgb_process(self, image):
         """
-        Process an incoming RGB image to detect the red ball and publish an annotated image.
+        Process an incoming RGB image to detect the red ball and publish an 
+        annotated image.
 
-        Args:
-            image (sensor_msgs.msg.Image): 
-                The incoming RGB image to process.
+        This method detects the red ball, finds its center of mass, and 
+        publishes the annotated image.
 
-        Raises:
-            CvBridgeError: If the conversion from ROS Image to OpenCV format fails.
+        Args
+        ----
+        image (sensor_msgs.msg.Image): 
+            The incoming RGB image to process.
+
+        Raises
+        ------
+        CvBridgeError: 
+            If the conversion from ROS Image to OpenCV format fails.
         """
         cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding='bgr8')
         self.rgb_image_height, self.rgb_image_width, _ = cv_image.shape
@@ -264,14 +278,17 @@ class ImageProcessNode(Node):
         """
         Process an RGB image to detect multiple balls of a specific color.
 
-        Args:
-            image (numpy.ndarray): 
-                The OpenCV format RGB image to process.
-            ball_color (str): 
-                The color of the balls to detect (e.g., 'blue').
+        Args
+        ----
+        image (numpy.ndarray): 
+            The OpenCV format RGB image to process.
+        ball_color (str): 
+            The color of the balls to detect (e.g., 'blue').
 
-        Raises:
-            CvBridgeError: If the conversion from OpenCV image to ROS Image fails.
+        Raises
+        ------
+        CvBridgeError: 
+            If the conversion from OpenCV image to ROS Image fails.
         """
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
 
@@ -305,7 +322,7 @@ class ImageProcessNode(Node):
                         'z': coords[2],
                     }
         self.get_logger().debug(
-            f"{ball_color} ball dict len: {len(ball_dict)}"
+            f'{ball_color} ball dict len: {len(ball_dict)}'
         )
 
         if ball_color == 'blue':
@@ -314,11 +331,13 @@ class ImageProcessNode(Node):
 
     def depth_process(self, image):
         """
-        Callback to process the depth image and extract depth information for detected objects.
+        Process the depth image and extract depth information for detected 
+        objects.
 
-        Args:
-            image (sensor_msgs.msg.Image):
-                The incoming depth image message.
+        Args
+        ----
+        image (sensor_msgs.msg.Image): 
+            The incoming depth image message.
         """
         depth_image = self.bridge.imgmsg_to_cv2(
             image, desired_encoding='16UC1'
@@ -337,16 +356,19 @@ class ImageProcessNode(Node):
         """
         Find the center of mass of the largest contour in a binary mask.
 
-        Args:
-            mask (numpy.ndarray):
-                The binary mask image to process.
+        Args
+        ----
+        mask (numpy.ndarray): 
+            The binary mask image to process.
 
-        Returns:
-            tuple:
-                - cx (int or None): X-coordinate of the center of mass.
-                - cy (int or None): Y-coordinate of the center of mass.
-                - largest_contour (numpy.ndarray or None): The largest contour found in the mask.
-                If no contours are found, all return values will be `None`.
+        Returns
+        -------
+        tuple: 
+            - cx (int or None): X-coordinate of the center of mass.
+            - cy (int or None): Y-coordinate of the center of mass.
+            - largest_contour (numpy.ndarray or None): The largest contour 
+            found in the mask.
+            If no contours are found, all return values will be `None`.
         """
         # Find contours in the mask
         contours, _ = cv.findContours(
@@ -361,10 +383,10 @@ class ImageProcessNode(Node):
             M = cv.moments(largest_contour)
 
             # Ensure the moment is not zero (to avoid division by zero)
-            if M["m00"] != 0:
+            if M['m00'] != 0:
                 # Calculate the center of mass (cx, cy)
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
+                cx = int(M['m10'] / M['m00'])
+                cy = int(M['m01'] / M['m00'])
 
                 return cx, cy, largest_contour
         return None, None, None  # if no red ball is found
@@ -373,18 +395,21 @@ class ImageProcessNode(Node):
         """
         Find the centers of mass for valid contours in a binary mask.
 
-        Args:
-            mask (numpy.ndarray):
-                The binary mask image to process.
+        Args
+        ----
+        mask (numpy.ndarray): 
+            The binary mask image to process.
 
-        Returns:
-            list:
-                A list of valid contours and their respective center of mass coordinates.
-                Each entry in the list is a list containing:
-                - The contour itself.
-                - cx (int): X-coordinate of the center of mass.
-                - cy (int): Y-coordinate of the center of mass.
-                If no valid contours are found, returns an empty list.
+        Returns
+        -------
+        list: 
+            A list of valid contours and their respective center of mass 
+            coordinates.
+            Each entry in the list is a list containing:
+            - The contour itself.
+            - cx (int): X-coordinate of the center of mass.
+            - cy (int): Y-coordinate of the center of mass.
+            If no valid contours are found, returns an empty list.
         """
         # Find contours in the mask
         contours, _ = cv.findContours(
@@ -400,13 +425,11 @@ class ImageProcessNode(Node):
                     M = cv.moments(con)
 
                     # Ensure the moment is not zero (to avoid division by zero)
-                    if M["m00"] != 0:
+                    if M['m00'] != 0:
                         # Calculate the center of mass (cx, cy)
-                        cx = int(M["m10"] / M["m00"])
-                        cy = int(M["m01"] / M["m00"])
-
+                        cx = int(M['m10'] / M['m00'])
+                        cy = int(M['m01'] / M['m00'])
                     valid_contours.append([con, cx, cy])
-            # self.get_logger().debug(f"num valid cons {len(valid_contours)}")
             return valid_contours
         return None
 
@@ -414,12 +437,19 @@ class ImageProcessNode(Node):
         """
         Convert pixel coordinates (u, v) and depth to world coordinates.
 
-        Args:
-            u (int): Pixel x-coordinate.
-            v (int): Pixel y-coordinate.
-            depth_value (float): Depth value at (u, v).
-        Returns:
-            tuple: (x, y, z) world coordinates in meters.
+        Parameters
+        ----------
+        u (int): 
+            Pixel x-coordinate.
+        v (int): 
+            Pixel y-coordinate.
+        depth_value (float): 
+            Depth value at (u, v).
+
+        Returns
+        -------
+        tuple: 
+            (x, y, z) world coordinates in meters.
         """
         if self.intrinsics:
             fx = self.intrinsics.fx
@@ -436,15 +466,14 @@ class ImageProcessNode(Node):
         return None
 
     def timer_callback(self):
+        """Timer callback."""
         if self.has_red_ball:
             self.broadcast_camera_to_redball()
         for color in self.hsv_dict:
             self.broadcast_camera_to_otherballs(color)
 
     def destroy_node(self):
-        """
-        Cleanly shuts down the node and releases resources.
-        """
+        """Cleanly shuts down the node and releases resources."""
         super().destroy_node()
 
 def main():
