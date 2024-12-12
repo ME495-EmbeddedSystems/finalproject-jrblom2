@@ -97,6 +97,8 @@ class ControlNode(Node):
             if len(self.ballDict.items()) == 0:
                 self.logger.info('No balls, game done.')
                 await self.reset()
+                await self.throwItBack()
+                await self.reset()
                 self.state = State.STANDBY
                 return
 
@@ -191,6 +193,21 @@ class ControlNode(Node):
         joints = {}
         joints['fer_joint1'] = 0.0
         joints['fer_joint2'] = -np.pi / 4
+        joints['fer_joint3'] = 0.0
+        joints['fer_joint4'] = -3 * np.pi / 4
+        joints['fer_joint5'] = 0.0
+        joints['fer_joint6'] = np.pi / 2
+        joints['fer_joint7'] = np.pi / 4
+        resultFuture = await self.mp_interface.mp.pathPlanJoints(
+            joints, startJoints=None, max_vel=0.2, max_accel=0.2
+        )
+        await resultFuture
+
+    async def throwItBack(self):
+        """Throw it back position."""
+        joints = {}
+        joints['fer_joint1'] = 0.0
+        joints['fer_joint2'] = -np.pi / 2
         joints['fer_joint3'] = 0.0
         joints['fer_joint4'] = -3 * np.pi / 4
         joints['fer_joint5'] = 0.0
