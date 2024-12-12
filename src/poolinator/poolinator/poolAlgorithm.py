@@ -2,15 +2,8 @@
 Class used for the pool algorithm.
 
 The basic algorithm is structured as follows:
-    1. Calculate a direct shot from the nearest pocketable ball
-    2. If no direct shot, calculate a wall shot with, at most, one impact from the 
-       nearest pocketable ball
-    3. If that's not possible, break up any clusters
-
-Working functions (I think):
-    - calc_dist
-    - 
-
+    1. Calculate a direct shot from the nearest pocketable ball.
+    2. If no direct shot, shoot directly at a ball to get new positions.
 """
 
 import math
@@ -21,7 +14,8 @@ from poolinator.bridger import quaternion_from_euler
 
 def calc_ang(ball_1, ball_2):
     """
-    Calculates angle from ball_1 to ball_2
+    Calculate the angle from ball_1 to ball_2.
+
     Args:
     ----
     ball_1 (Vector3):
@@ -33,6 +27,7 @@ def calc_ang(ball_1, ball_2):
     -------
     angle (float):
         Angle between both balls
+
     """
     return math.atan2(ball_2.y - ball_1.y, ball_2.x - ball_1.x)
 
@@ -40,7 +35,7 @@ def calc_ang(ball_1, ball_2):
 class PoolAlgorithm:
     """A class to plan shots in pool."""
 
-    def __init__(self, balls, pockets, logger):
+    def __init__(self, balls, pockets, logger=None):
         """
         Initialize the state of the pool balls on the table.
 
@@ -48,19 +43,13 @@ class PoolAlgorithm:
         ----
         balls (dict):
             A dictionary of every pool ball on the table containing
-            the name of the ball and its position (Vector3).
+            the name of the ball and its position (Vector3)
             {"Name" : (x, y, z)}
-        [pocket]:
+        pockets:
             A list of every pocket on the table containing its x, y, z
-            value (Vector3).
-
-        Returns
-        -------
-        target (dict):
-            Single entry of a ball that is being targeted
-        contact_point (Pose):
-            The final pose of the cue to hit the right
-            point on the cue ball in the base frame.
+            value [(Vector3)]
+        logger:
+            A node logger used for debugging (otherwise, None).
 
         """
         self.logger = logger
@@ -80,8 +69,7 @@ class PoolAlgorithm:
 
     def check_obstacle(self, ball_1, ball_2, dist, ball_ignore=None):
         """
-        Checks if a ball on the table will interfere with the
-        impact between ball 1 and ball 2.
+        Check if a ball will interfere with the impact between ball 1 and ball 2.
 
         Args:
         ----
@@ -97,8 +85,9 @@ class PoolAlgorithm:
         Returns
         -------
         obstruction(Bool):
-            Boolean for whether a ball is in the trajectory path.
-            If true, a different target ball or imact must be used.
+            Boolean for whether a ball is in the trajectory path (if true, a
+            different target ball or imact must be used)
+
         """
         obstruction = True
 
@@ -131,8 +120,11 @@ class PoolAlgorithm:
 
     def calc_cue_pos(self, cue_ball, target_ball, impact):
         """
-        Calculates the position of the cue given the position of the
-        target ball, and desired impact (either a pocket or wall position).
+        Calculate the position of the cue.
+        
+        Given the position of the target ball, and desired impact (either a pocket 
+        or wall position), calculate the end-effector position required to make
+        the shot.
 
         Args:
         ----
@@ -152,6 +144,7 @@ class PoolAlgorithm:
             (x, y, z) position of the cue stick.
         strike_ang (float):
             Rotation about the z axis at that point
+
         """
         strike_ang = None
         possible = False
@@ -202,10 +195,26 @@ class PoolAlgorithm:
 
     def sink_cue_ball(self, ball, impact):
         """
-        Test function for a single ball.
-        Impact is the x, y, z vector3 point for the pocket or point on the wall.
-        """
+        Shoot a ball directly at the point of impact.
 
+        Does not account for obstacles or the angle of the balls after impact. 
+        Used when there is no possible shot to a pocket (when `ball` is the cue ball).
+
+        Args:
+        ----
+        ball (vector3):
+            Position of the ball the arm is aiming for. 
+        impact (vector3):
+            The x, y, z vector3 point for the pocket or point on the wall.
+        
+        Returns
+        -------
+        ee(Point):
+            Desired position of the end-effector frame.
+        strike_ang(float):
+            Rotation about the z axis at that point 
+
+        """
         # Calculate striking angle
         strike_ang = calc_ang(ball, impact)
         ee = Point()
@@ -217,12 +226,12 @@ class PoolAlgorithm:
 
     def calc_cue_targ(self, cue_ball, pockets):
         """
-        Calculates final target_ball and desired cue pose for the shot.
+        Calculate the final target_ball and desired cue pose for the shot.
 
         Args:
         ----
         cue_ball (Vector3):
-            Position of the cue_ball
+            Position of the cue_ball.
 
         [pocket]:
             A list of every pocket on the table containing its x, y, z
@@ -230,14 +239,13 @@ class PoolAlgorithm:
 
         Returns
         -------
-        cue(Point):
-            Position of the cue stick.
+        ee(Point):
+            Desired position of the end-effector frame.
         strike_ang(float):
-            Rotation about the z axis at that point # If only cue ball left, send to pocket 1
-                    ee, strike_ang = self.sink_cue_ball(cue_ball, pockets[2])
-                    return ee, strike_ang, key1
+            Rotation about the z axis at that point.
         target_name(string):
-            Name of the target ball
+            Name of the target ball.
+
         """
         N = len(pockets)
 
@@ -268,8 +276,7 @@ class PoolAlgorithm:
 
     def calc_strike_pose(self, cue_ball, balls, pockets, ee_list=None):
         """
-        Calculates end-effector pose in the base frame for the desired
-        shot.
+        Calculate the end-effector pose in the base frame for the desired shot.
 
         Args:
         ----
@@ -288,7 +295,10 @@ class PoolAlgorithm:
 
         Returns
         -------
-        eePose (Pose)
+        eePose (Pose):
+            The end-effector pose that the franka should move to (in the base
+            frame).
+
         """
         self.balls = balls
         ee, strike_ang, _ = self.calc_cue_targ(cue_ball, pockets)
