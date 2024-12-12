@@ -1,5 +1,5 @@
 # Pool-inator
-This ROS package is used to make a Franka Emika Robot (FER) play a game of pool on a tabletop pool set for the final project of ME 495: Embedded Systems in Robotics
+This ROS package is used to make a Franka Emika Robot (FER) play a game of pool on a tabletop pool set for the final project of ME 495: Embedded Systems in Robotics at Northwestern University.
 
 Authors: An Nguyen, Caroline Terryn, Catherine Maglione, Joseph Blom, Logan Boswell
 
