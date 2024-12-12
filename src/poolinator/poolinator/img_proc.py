@@ -54,9 +54,6 @@ class ImageProcessNode(Node):
         self.pub_redball = self.create_publisher(msg_Image, 'red_ball', 10)
 
         self.pub_blueball = self.create_publisher(msg_Image, 'blue_ball', 10)
-        self.pub_yellowball = self.create_publisher(
-            msg_Image, 'yellow_ball', 10
-        )
 
         self.pub_table = self.create_publisher(msg_Image, 'table', 10)
 
@@ -85,12 +82,10 @@ class ImageProcessNode(Node):
 
         # red is cue ball
         self.blue_ball_dict = None
-        self.yellow_ball_dict = None
 
         self.hsv_dict = {
             'blue': [[100, 150, 50], [140, 255, 255]],
-            'yellow': [[[20, 100, 100]], [40, 255, 255]],
-        }  # TODO: REMOVE YELLOW
+        }
 
     def broadcast_camera_to_redball(self):
         """_summary_"""
@@ -123,8 +118,6 @@ class ImageProcessNode(Node):
             ball_dict = None
             if ball_color == 'blue':
                 ball_dict = self.blue_ball_dict
-            elif ball_color == 'yellow':
-                ball_dict = self.yellow_ball_dict
 
             if ball_dict is None:
                 # self.get_logger().info("No balls detected.")
@@ -286,9 +279,6 @@ class ImageProcessNode(Node):
         if ball_color == 'blue':
             self.blue_ball_dict = ball_dict
             self.pub_blueball.publish(new_msg)
-        elif ball_color == 'yellow':
-            self.yellow_ball_dict = ball_dict
-            self.pub_yellowball.publish(new_msg)
 
     def depth_process(self, image):
         """Callback to process the depth image.
