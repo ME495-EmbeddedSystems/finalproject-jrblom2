@@ -32,10 +32,10 @@ The system consists of the Franka arm holding a cue with an apriltag, a realsens
 
 ## Videos
 ### Example Game:
-[poolinator.mp4](https://github.com/user-attachments/assets/c430b572-f40c-46c5-9905-023ac7beba72)
+[poolinator.mp4](https://github.com/user-attachments/assets/101fc89d-c338-4b47-8d1b-a6687bba9aeb)
 
 ### Example Rviz Window:
-[poolinator_rviz.webm](https://github.com/user-attachments/assets/b7c43b19-c84e-4187-915d-9dea66f87472)
+[poolinator_rviz.webm](https://github.com/user-attachments/assets/7127c4b6-e01d-4338-998d-003e6e6acb7b)
 
 ## Testing
 Tests can be run with `colcon test`
