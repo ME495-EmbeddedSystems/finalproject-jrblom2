@@ -37,7 +37,6 @@ class Gripper:
         if not self._client.wait_for_server(timeout_sec=10):
             raise Exception('move_action action server not ready')
 
-
     async def openGripper(self):
             """Open the gripper.
 
