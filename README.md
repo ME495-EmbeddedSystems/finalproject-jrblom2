@@ -1,7 +1,7 @@
 # Pool-inator
-This ROS package is used to make a Franka Emika Robot (FER) play a game of pool on a tabletop pool set for the final project of ME 495: Embedded Systems in Robotics at Northwestern University.
-
 Authors: An Nguyen, Caroline Terryn, Catherine Maglione, Joseph Blom, Logan Boswell
+
+This ROS package is used to make a Franka Emika Robot (FER) play a game of pool on a tabletop pool set for the final project of ME 495: Embedded Systems in Robotics at Northwestern University.
 
 
 ## Quickstart
@@ -10,15 +10,32 @@ Authors: An Nguyen, Caroline Terryn, Catherine Maglione, Joseph Blom, Logan Bosw
 3. If the red ball gets knocked into a pocket or off the table, place it back on the table and run `ros2 service call /strike_cue std_srvs/srv/Empty` again.
 4. Once all of the blue balls have been knocked into a pocket, then the Franka will knock the red ball into a pocket.
 
+## Nodes
+#### /transform:
+this node establishes the link between the camera fram and the robot base frame
+
+#### /image_processor_colors:
+this node identifies the pool balls using computer vision
+
+#### /control:
+this node sends sends commands to the Franka to make it hit balls, move to the home configuration, etc.
+
+## Launchfiles
+#### image.laumch.xml:
+this file launches nodes necessary for computer vision and an Rviz window that includes the frames of the balls and shows images in the bottom-left corner
+
+#### control.launch.xml:
+this file includes image.launch.xml and also starts the control node
+
+## System Overview
+The system consists of the Franka arm holding a cue with an apriltag, a realsense camera, and a tabletop pool table with corresponding apriltag. When the command `ros2 launch poolinator control.launch.xml` is run, the /transform node publishes the transform between the camera and the /image_processor_colors node identifies the pool balls. The once the /strike_cue service is called /control node commands the Franka arm to play through a game of pool using MoveIt. The game continues until all of the blue balls are knocked into pockets, and then the red ball is pocketed. If the red ball goes into any of the pockets or accidentally knocked off the table, the Franka will wait until the red ball is replaced and the /strike_cue service is called once again.
+
 ## Videos
 ### Example Game:
 [poolinator.mp4](https://github.com/user-attachments/assets/c430b572-f40c-46c5-9905-023ac7beba72)
 
 ### Example Rviz Window:
 [poolinator_rviz.webm](https://github.com/user-attachments/assets/b7c43b19-c84e-4187-915d-9dea66f87472)
-
-## Contributing
-Please Please Please Please work on a seperate branch and only merge (or preferably PR) to main with someone else to check it first.
 
 ## Testing
 Tests can be run with `colcon test`
