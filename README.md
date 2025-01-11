@@ -12,7 +12,7 @@ This ROS package is used to make a Franka Emika Robot (FER) play a game of pool 
 
 ## Nodes
 #### /transform:
-this node establishes the link between the camera fram and the robot base frame
+this node establishes the link between the camera frame and the robot base frame
 
 #### /image_processor_colors:
 this node identifies the pool balls using computer vision
